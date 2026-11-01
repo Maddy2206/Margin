@@ -6,7 +6,6 @@
 
 - `npm run dev` (port 3000), `npm run build`, `npm run start`, `npm run lint`. Type-check with `npx tsc --noEmit`. There are no automated tests.
 - Client-only app with no server code of its own; signed-in users' data lives in Supabase (talked to straight from the browser, access control is row-level security in `supabase/schema.sql`), guests' in IndexedDB. Routes in `app/`, UI in `components/`, logic and both storage backends in `lib/` (the app imports only `@/lib/storage`; `local.ts` and `cloud.ts` must keep the same function signatures). Never put the Supabase `service_role` key in the repo or a `NEXT_PUBLIC_` variable. Details: [docs/architecture.md](docs/architecture.md). User-facing overview: [README.md](README.md).
-- `devpost/` and `agent/`, `.agents/`, `.claude/skills/` are hackathon-process material. `devpost/*.md` are historical snapshots and may not match the app; do not treat them as current.
 
 ## Documentation maintenance
 
@@ -25,7 +24,7 @@ Docs: `README.md` (short overview, setup, top limitations), `docs/guide.md` (ful
 
 ## Git: the learner commits and pushes (mandatory)
 
-- **Never commit any code.** Do not run `git commit`, `git commit --amend`, `git add` for the purpose of committing, or any other command that creates a commit. This applies in every mode and to every skill or workflow (including the `5-build` "verify and commit each step" step, parallel agents, and subagents), and no earlier approval overrides it.
+- **Never commit any code.** Do not run `git commit`, `git commit --amend`, `git add` for the purpose of committing, or any other command that creates a commit. This applies in every mode and to every skill or workflow (including parallel agents and subagents), and no earlier approval overrides it.
 - **Never push**, create branches or tags for publishing, or open pull requests. The learner commits and pushes to GitHub themselves.
 - Leave changes in the working tree. When a step is finished and verified, say what changed and which files, and suggest a commit message for the learner to use if they want one.
 - Read-only git commands (`git status`, `git diff`, `git log`) are fine.

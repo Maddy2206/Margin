@@ -50,3 +50,7 @@ Scripts: `npm run dev | build | start | lint`. There are no automated tests.
 ## Built with
 
 Next.js, TypeScript, Tailwind CSS, [pdf.js](https://mozilla.github.io/pdf.js/), [Excalidraw](https://docs.excalidraw.com/), [Supabase](https://supabase.com), [idb](https://github.com/jakearchibald/idb), [react-resizable-panels](https://github.com/bvaughn/react-resizable-panels) and [jsPDF](https://github.com/parallax/jsPDF).
+
+## License
+
+[MIT](LICENSE)
