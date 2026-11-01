@@ -43,16 +43,15 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const stamp = formatToday;
     listBoards()
       .then((l) => {
         setBoards(l);
-        setToday(stamp());
+        setToday(formatToday());
       })
       .catch(() => {
         setStorageError(true);
         setBoards([]);
-        setToday(stamp());
+        setToday(formatToday());
       });
     listFocusSessions()
       .then((l) => {

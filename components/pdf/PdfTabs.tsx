@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { validatePdf } from "@/lib/pdf-validate";
+import { validatePdfs } from "@/lib/pdf-validate";
 import type { PdfDoc } from "@/lib/types";
 
 /** One tab per PDF in the board, plus "+" to add more. Double-click a tab to rename it. */
@@ -46,14 +46,8 @@ export default function PdfTabs({
   async function choose(list: FileList | null) {
     const chosen = list ? Array.from(list) : [];
     if (fileRef.current) fileRef.current.value = "";
-    const good: File[] = [];
-    const problems: string[] = [];
-    for (const f of chosen) {
-      const problem = await validatePdf(f);
-      if (problem) problems.push(`${f.name}: ${problem}`);
-      else good.push(f);
-    }
-    if (problems.length) onError(problems.join(" "));
+    const { good, error } = await validatePdfs(chosen);
+    if (error) onError(error);
     if (good.length) await onAdd(good);
   }
 

@@ -6,7 +6,7 @@ Works in two modes. As a **guest** (the default, no setup) everything is saved i
 
 ## Run it
 
-Requires Node.js 20.9+ (Next.js's minimum; `package.json` has no `engines` field).
+Requires Node.js 22+ (`engines` in `package.json`; Next.js itself needs 20.9+, but `@supabase/supabase-js` is dropping Node 20).
 
 ```bash
 npm install

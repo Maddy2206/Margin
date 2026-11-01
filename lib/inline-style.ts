@@ -1,6 +1,6 @@
 import type { CSSProperties, MouseEvent, FocusEvent } from "react";
 
-/** Turns a CSS declaration string ("a-b:c;d:e") into a React style object. Used by the notebook pages, whose markup comes straight from the design files. */
+/** Turns a CSS declaration string ("a-b:c;d:e") into a React style object. Used by the landing and login markup, which is inline-styled. */
 const cache = new Map<string, CSSProperties>();
 
 export function css(s: string): CSSProperties {

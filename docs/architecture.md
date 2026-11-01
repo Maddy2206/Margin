@@ -15,8 +15,8 @@ Client-only Next.js (App Router) app: no API routes or server code of its own. D
 | `components/notes/` | `NotesCanvas` (Excalidraw wrapper, autosave), toolbar, inline editor, paper background, helpers |
 | `components/workspace/SplitLayout.tsx` | Resizable PDF/notes split |
 | `components/focus/` | Focus mode: `useFocusSession` (state, saving, fullscreen, absence detection, chime), `useAmbientSound` (focus sound choice + playback tied to the session), `SoundPicker`, `SoundMenu`, `FocusSetupDialog`, `FocusBar`, `FocusOverlay`, `HoldToExit`, `useNow` |
-| `lib/storage/` | The storage API (see Storage below): `index.ts` (what the app imports), `local.ts` (IndexedDB), `cloud.ts` (Supabase), `migrate.ts` (guest-to-account upload) |
-| `lib/` | `supabase.ts` (client, `null` without env vars), `types.ts`, `export-pdf.ts`, `note-image.ts`, `diagram-region.ts`, `paper.ts`, `pages.ts`, `placement.ts`, `handwriting-fonts.ts`, `pdf-validate.ts`, `visible-page.ts`, `note-source.ts`, `focus.ts` (pure session/timer/stats logic), `ambient.ts` (Web Audio focus-sound engine and saved choice), `auth.ts` (Supabase email/password and Google sign-in, password reset, `useUser()`), `inline-style.ts` (`css`/`hov`/`foc` helpers that turn the design files' inline style strings into React props), `today.ts` |
+| `lib/storage/` | The storage API (see Storage below): `index.ts` (what the app imports), `local.ts` (IndexedDB), `cloud.ts` (Supabase), `migrate.ts` (guest-to-account upload), `new-doc.ts` (`newDoc`, the new-PDF record builder both backends share) |
+| `lib/` | `supabase.ts` (client, `null` without env vars), `types.ts`, `export-pdf.ts`, `note-image.ts`, `diagram-region.ts`, `paper.ts`, `pages.ts`, `placement.ts`, `handwriting-fonts.ts`, `pdf-validate.ts` (`validatePdf` for one file, `validatePdfs` for a batch with one combined error message), `visible-page.ts`, `note-source.ts`, `focus.ts` (pure session/timer/stats logic), `ambient.ts` (Web Audio focus-sound engine and saved choice), `auth.ts` (Supabase email/password and Google sign-in, password reset, `useUser()`), `inline-style.ts` (`css`/`hov`/`foc` helpers that turn the design files' inline style strings into React props), `today.ts` |
 
 ## Notebook theme
 
@@ -24,7 +24,7 @@ The landing, login and dashboard pages share a ruled-paper "notebook" look. Pape
 
 ## Data flow
 
-1. Uploaded PDFs are checked by `lib/pdf-validate.ts` and stored (a Blob in IndexedDB, or a file in the `pdfs` bucket).
+1. Uploaded PDFs are checked by `validatePdfs` in `lib/pdf-validate.ts` and stored (a Blob in IndexedDB, or a file in the `pdfs` bucket).
 2. `PdfViewer` renders pages with pdf.js (legacy build, worker resolved via `new URL(...)`).
 3. Selecting text opens `SelectionPopout` (marker colour, font). On export, `lib/note-image.ts` draws the text on a canvas in the handwriting font; the PNG is inserted into the Excalidraw scene at a position from `lib/placement.ts`, and a `Highlight` record links to it by `noteId`.
 4. Diagram clip: `DiagramSelect` + `lib/diagram-region.ts` rasterize a page region into an image element. The image's `customData.source` (`NoteSource`: docId, page, rect in 0-1 page units) records where it came from.
@@ -61,5 +61,5 @@ IndexedDB `pdf-note-taker`, version 3. Stores: `boards`, `highlights` (indexed b
 
 - Environment variables read: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (optional; both empty means guest-only, template in `.env.example`; they are inlined into the browser bundle by design), and `NEXT_DIST_DIR` (build output folder, default `.next`, see `next.config.ts`).
 - Tailwind is wired through a Turbopack CSS rule in `next.config.ts` (no PostCSS config); a non-Turbopack build is untested.
-- `package.json` requires Node >=20.9.0 (`engines`, a Next 16 requirement). On Railway set `NEXT_TELEMETRY_DISABLED=1` so Serverless sleeping works (see the README Deploy section).
-- No tests, CI or deployment config files exist in the repo (Railway uses its auto-detected build).
+- `package.json` requires Node >=22 (`engines`; Next 16 needs >=20.9 and `@supabase/supabase-js` is dropping Node 20). On Railway set `NEXT_TELEMETRY_DISABLED=1` so Serverless sleeping works (see the README Deploy section).
+- No tests, CI or deployment config files exist in the repo (both the Vercel and Railway deploys in the README use the platform's auto-detected build).

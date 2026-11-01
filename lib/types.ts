@@ -20,7 +20,7 @@ export interface Board {
   paperColor?: string;
   /** Number of notebook pages in the notes pane (undefined means 1). */
   notePages?: number;
-  /** PDF zoom factor; null/undefined means fit to the pane width. (Legacy: now kept per PDF.) */
+  /** PDF zoom factor; null/undefined means fit to the pane width. (Legacy: zoom is now kept per PDF; this is only read when migrating old boards.) */
   pdfZoom?: number | null;
   /** The PDF tab that was open last (defaults to the first PDF). */
   activeDocId?: string;

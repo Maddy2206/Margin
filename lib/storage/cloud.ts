@@ -1,5 +1,6 @@
 import type { Board, FocusSession, Highlight, PdfDoc, SceneRecord } from "../types";
 import { supabase } from "../supabase";
+import { newDoc } from "./new-doc";
 
 // Supabase implementation of the storage API (same function names and shapes as ./local).
 // Tables and policies are in supabase/schema.sql. PDFs go to the `pdfs` bucket and note images to `scene-files`,
@@ -200,18 +201,6 @@ export async function listBoards(): Promise<Board[]> {
 export async function getBoard(id: string): Promise<Board | undefined> {
   const row = check(await sb().from("boards").select("*").eq("id", id).maybeSingle());
   return row ? toBoard(row as BoardRow) : undefined;
-}
-
-function newDoc(boardId: string, file: File, addedAt: number): PdfDoc {
-  return {
-    id: crypto.randomUUID(),
-    boardId,
-    name: file.name.replace(/\.pdf$/i, "") || "Untitled",
-    pageCount: 0,
-    lastPage: 1,
-    zoom: null,
-    addedAt,
-  };
 }
 
 async function uploadPdf(user: string, docId: string, blob: Blob): Promise<void> {

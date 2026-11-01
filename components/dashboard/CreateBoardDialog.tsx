@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBoard } from "@/lib/storage";
-import { validatePdf } from "@/lib/pdf-validate";
+import { validatePdfs } from "@/lib/pdf-validate";
 import type { Paper } from "@/lib/types";
 import PdfDropzone from "@/components/ui/PdfDropzone";
 import PageStylePicker from "@/components/ui/PageStylePicker";
@@ -19,14 +19,8 @@ export default function CreateBoardDialog({ onClose }: { onClose: () => void }) 
 
   async function addFiles(list: File[]) {
     setError(null);
-    const good: File[] = [];
-    const problems: string[] = [];
-    for (const f of list) {
-      const problem = await validatePdf(f);
-      if (problem) problems.push(`${f.name}: ${problem}`);
-      else good.push(f);
-    }
-    if (problems.length) setError(problems.join(" "));
+    const { good, error: problem } = await validatePdfs(list);
+    if (problem) setError(problem);
     if (!good.length) return;
     setFiles((cur) => [...cur, ...good]);
     if (!name.trim()) setName(good[0].name.replace(/\.pdf$/i, ""));

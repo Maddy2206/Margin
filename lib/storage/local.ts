@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type { Board, FocusSession, Highlight, PdfDoc, SceneRecord } from "../types";
+import { newDoc } from "./new-doc";
 
 interface NoteTakerDB extends DBSchema {
   boards: { key: string; value: Board };
@@ -85,18 +86,6 @@ export async function listBoards(): Promise<Board[]> {
 
 export async function getBoard(id: string): Promise<Board | undefined> {
   return (await db()).get("boards", id);
-}
-
-function newDoc(boardId: string, file: File, addedAt: number): PdfDoc {
-  return {
-    id: crypto.randomUUID(),
-    boardId,
-    name: file.name.replace(/\.pdf$/i, "") || "Untitled",
-    pageCount: 0,
-    lastPage: 1,
-    zoom: null,
-    addedAt,
-  };
 }
 
 export async function createBoard(

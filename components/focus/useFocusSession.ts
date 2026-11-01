@@ -54,7 +54,7 @@ function leaveFullscreen() {
   } catch {}
 }
 
-/** State and actions for one board's focus session. Everything is saved to IndexedDB as it changes. */
+/** State and actions for one board's focus session. Everything is saved through the storage layer as it changes. */
 export function useFocusSession(boardId: string) {
   const [session, setSession] = useState<FocusSession | null>(null);
   const [summary, setSummary] = useState<FocusSession | null>(null);
