@@ -67,6 +67,17 @@ See [docs/architecture.md](docs/architecture.md) for components, data flow and t
 
 Push to GitHub and import the repo in Vercel; the Next.js defaults work. With no environment variables the deployed app is guest-only. To enable accounts, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the Vercel project and add the deployed domain to Supabase's redirect URLs (these values are public by design; protection comes from row-level security).
 
+### Railway (low idle cost)
+
+The app is a plain Node server (`npm run build`, then `npm run start`; Railway sets `PORT`), so Railway's auto-detected build works.
+
+1. New service from the GitHub repo. Set the variables before the first build, because `NEXT_PUBLIC_*` values are inlined at build time: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_TELEMETRY_DISABLED=1` (Next's telemetry is outbound traffic and stops the service from sleeping).
+2. Service Settings, Deploy: enable **Serverless**, then redeploy (it only applies to new containers). Optionally set Replica Limits (for example 0.5 vCPU, 1 GB) to cap spend.
+3. Networking: generate a domain, then add it as Supabase's Site URL and a `https://<domain>/**` redirect URL.
+4. Workspace Usage: set a custom email alert and, if wanted, a hard limit (minimum $10; it takes every workload in the workspace offline).
+
+A sleeping service wakes on the next request; the first one is slower and may return a 502, a refresh fixes it.
+
 ## Built with
 
 Next.js, TypeScript, Tailwind CSS, [pdf.js](https://mozilla.github.io/pdf.js/), [Excalidraw](https://docs.excalidraw.com/), [idb](https://github.com/jakearchibald/idb), [Supabase](https://supabase.com) (optional accounts and storage), [react-resizable-panels](https://github.com/bvaughn/react-resizable-panels) and [jsPDF](https://github.com/parallax/jsPDF).
