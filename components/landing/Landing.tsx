@@ -1,13 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-// Logic ported from the "Margin Landing v2" design file: a 30 s workflow timeline, six sticky feature sheets with
+// Logic ported from the "Margin Landing v2" design file: a 20 s workflow timeline, six sticky feature sheets with
 // auto-playing demos, the scroll-linked night transition and a 26 s simulated focus session. The markup lives in LandingView.
 import { Component } from "react";
 import LandingView from "./LandingView";
 import { ambient, loadSoundPrefs, type SoundId } from "@/lib/ambient";
 
 type S = Record<string, any>;
+
+const WF_MS = 20000;
 
 const DEMO_SOUNDS: Record<string, SoundId> = { Rain: 'rain', 'Coffee shop': 'coffee', Ocean: 'ocean', 'Lo-fi': 'lofi' };
 const FOCUS_END = 0.78;
@@ -51,11 +53,12 @@ class Landing extends Component<object, S> {
       this.loopId = requestAnimationFrame(loop);
       // ~30 fps is plenty for these animations and halves the render work.
       if (t - last < 32) return;
-      const dt = Math.min(64, t - last); last = t;
+      // Keep real time on slow devices; the cap only stops a jump after the tab was in the background.
+      const dt = Math.min(250, t - last); last = t;
       const s = this.state, n: S = {};
       if (s.wfVis && s.wfPlay) {
-        if (s.wfT >= 1) { hold += dt; if (hold > 2600) { hold = 0; n.wfT = 0; } }
-        else n.wfT = Math.min(1, s.wfT + dt / 30000);
+        if (s.wfT >= 1) { hold += dt; if (hold > 1800) { hold = 0; n.wfT = 0; } }
+        else n.wfT = Math.min(1, s.wfT + dt / WF_MS);
       }
       if (s.fRun) { const v = s.fT + dt / 26000; if (v >= 1) { n.fT = 1; n.fRun = false; } else n.fT = v; }
       if (Object.keys(n).length) this.setState(n);
@@ -93,11 +96,11 @@ class Landing extends Component<object, S> {
     const st = this.story;
     if (st) { const r = st.getBoundingClientRect(); n.wfVis = r.top < vh * 0.7 && r.bottom > vh * 0.3; }
     const dk = this.desk;
-    if (dk && dk.clientWidth) n.scale = Math.max(0.3, Math.min(1.6, dk.clientWidth / 940, dk.clientHeight / 660));
+    if (dk && dk.clientWidth) n.scale = Math.max(0.2, Math.min(1.6, dk.clientWidth / 940, dk.clientHeight / 660));
     const fo = this.focus;
     if (fo) { const r = fo.getBoundingClientRect(); n.night = c((vh * 0.9 - r.top) / (vh * 0.5)) * c((r.bottom - vh * 0.1) / (vh * 0.4)); }
     const fs = this.fs;
-    if (fs && fs.clientWidth) { const avail = fs.offsetTop > 80 ? (vh - 64 - fs.offsetTop - 22) : (vh - 64 - 44); n.fsScale = Math.max(0.3, Math.min(1.25, fs.clientWidth / 880, avail / 560)); n.fNarrow = fs.offsetTop > 80; }
+    if (fs && fs.clientWidth) { const avail = fs.offsetTop > 80 ? (vh - 64 - fs.offsetTop - 22) : (vh - 64 - 44); n.fsScale = Math.max(0.2, Math.min(1.25, fs.clientWidth / 880, avail / 560)); n.fNarrow = fs.offsetTop > 80; }
     const pages = Array.from(document.querySelectorAll('[data-page]'));
     let idx = 0;
     pages.forEach((el, i) => { if (el.getBoundingClientRect().top < vh * 0.45) idx = i; });
@@ -247,7 +250,6 @@ class Landing extends Component<object, S> {
 
       caps: CAPS.map((k, i) => ({ ...k, op: i === active ? 1 : 0, tf: `translateY(${(i - active) * 18}px)` })),
       wfToggle: () => this.setState((st: any) => ({ wfPlay: !st.wfPlay, wfT: st.wfT >= 1 ? 0 : st.wfT })), wfLabel: s.wfPlay ? 'Pause' : 'Play', wfIcon: s.wfPlay ? '❚❚' : '▶',
-      wfTime: '0:' + String(Math.floor(sp * 30)).padStart(2, '0') + ' / 0:30',
       steps5: CAPS.map((k, i) => ({ w: ((R[i][1] - R[i][0]) * 100).toFixed(0), go: () => this.setState({ wfT: R[i][0] + 0.002, wfPlay: true }), n: k.n, t: k.t, fill: (seg(R[i][0], R[i][1]) * 100).toFixed(1) + '%', c: i === active ? 'var(--color-accent-700)' : i < active ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 50%, transparent)' })),
       scale: s.scale.toFixed(3), deskH: Math.round(660 * s.scale) + 'px', deskW: Math.round(940 * s.scale) + 'px',
       deskSaved: sp > 0.44 && sp < 0.52 ? 'Saving…' : 'Saved',
@@ -299,6 +301,8 @@ class Landing extends Component<object, S> {
       startFocusDemo: () => { ambient.setVolume(loadSoundPrefs().volume); ambient.unlock(); this.setState({ fT: 0.13, fRun: true }); },
       setupPe: fp < 0.2 ? 'auto' : 'none', sumPe: fp > 0.86 ? 'auto' : 'none',
       startGlow: fp <= 0.12 ? '0 0 0 4px color-mix(in srgb, var(--color-accent-400) 25%, transparent)' : 'none',
+      // The mock's own button is too small to tap once the stage is scaled down for phones.
+      fStartLabel: s.fNarrow && !s.fRun ? (fp >= 1 ? 'Run it again' : 'Start focusing') : null,
       fHint: fp <= 0.12 ? '← press Start focusing to run a session' : fp >= 1 ? 'that was 50 minutes, in 26 seconds' : '', fHintOp: fp <= 0.12 || fp >= 1 ? 1 : 0,
       gsPickA: () => { clearTimeout(this.demoT); this.setState({ act: 5 }, () => this.runSeq(5, 'gsPh', GS_SEQ.slice(1, 4).concat([[0, 1200]]))); },
       gsPickB: () => { clearTimeout(this.demoT); this.setState({ act: 5 }, () => this.runSeq(5, 'gsPh', GS_SEQ.slice(4, 7).concat([[0, 1200]]))); },
