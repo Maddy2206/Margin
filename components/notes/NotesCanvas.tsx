@@ -127,6 +127,7 @@ export default function NotesCanvas({
   const [initial, setInitial] = useState<SceneRecord | null | undefined>(undefined);
   const [startView, setStartView] = useState<PaperView | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSave = useRef<(() => void) | null>(null);
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const [selectedNote, setSelectedNote] = useState<{ id: string; meta: NoteMeta } | null>(null);
   const [editing, setEditing] = useState<{ id: string; meta: NoteMeta; x: number; y: number } | null>(null);
@@ -189,9 +190,11 @@ export default function NotesCanvas({
     });
   }, [boardId]);
 
+  // Leaving the board inside the autosave delay must not lose the last edits: save them now.
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
+      pendingSave.current?.();
     },
     [],
   );
@@ -390,7 +393,8 @@ export default function NotesCanvas({
 
     if (timer.current) clearTimeout(timer.current);
     props.current.onSaveState?.("saving");
-    timer.current = setTimeout(() => {
+    const run = () => {
+      pendingSave.current = null;
       saveScene({
         boardId,
         elements: elements.filter((e) => !e.isDeleted) as unknown[],
@@ -409,7 +413,9 @@ export default function NotesCanvas({
           setSaveError(true);
           props.current.onSaveState?.("error");
         });
-    }, SAVE_DELAY_MS);
+    };
+    pendingSave.current = run;
+    timer.current = setTimeout(run, SAVE_DELAY_MS);
   }
 
   // Built once per loaded scene so re-renders never hand Excalidraw a "new" scene.

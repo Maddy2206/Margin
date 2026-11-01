@@ -158,7 +158,7 @@ export default function BoardPage() {
 
   function save(patch: Partial<Board>) {
     setBoard((b) => (b ? { ...b, ...patch } : b));
-    updateBoard(id, patch);
+    updateBoard(id, patch).catch(() => setSaveState("error"));
   }
 
   // the file shown is only used while it belongs to the open tab
@@ -167,7 +167,7 @@ export default function BoardPage() {
 
   function patchDoc(docId: string, patch: Partial<PdfDoc>) {
     setDocs((ds) => ds.map((d) => (d.id === docId ? { ...d, ...patch } : d)));
-    updateDoc(docId, patch);
+    updateDoc(docId, patch).catch(() => setSaveState("error"));
   }
 
   function selectDoc(docId: string) {

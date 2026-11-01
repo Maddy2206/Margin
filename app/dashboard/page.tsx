@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { authEnabled, displayName, signOut, useUser } from "@/lib/auth";
 import { formatToday } from "@/lib/today";
 import { deleteBoard, listBoards, listFocusSessions, updateBoard } from "@/lib/storage";
 import type { Board, FocusSession } from "@/lib/types";
@@ -26,12 +28,15 @@ export default function DashboardPage() {
   const [boards, setBoards] = useState<Board[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [storageError, setStorageError] = useState(false);
+  const [actionError, setActionError] = useState(false);
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [statsNow, setStatsNow] = useState(0);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("recent");
   const [today, setToday] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const user = useUser();
+  const router = useRouter();
 
   useEffect(() => {
     const stamp = formatToday;
@@ -79,13 +84,23 @@ export default function DashboardPage() {
   }, [boards, query, sort]);
 
   async function rename(id: string, name: string) {
-    await updateBoard(id, { name });
-    setBoards((bs) => bs && bs.map((b) => (b.id === id ? { ...b, name } : b)));
+    try {
+      await updateBoard(id, { name });
+      setBoards((bs) => bs && bs.map((b) => (b.id === id ? { ...b, name } : b)));
+      setActionError(false);
+    } catch {
+      setActionError(true);
+    }
   }
 
   async function remove(id: string) {
-    await deleteBoard(id);
-    setBoards((bs) => bs && bs.filter((b) => b.id !== id));
+    try {
+      await deleteBoard(id);
+      setBoards((bs) => bs && bs.filter((b) => b.id !== id));
+      setActionError(false);
+    } catch {
+      setActionError(true);
+    }
   }
 
   const hasBoards = (boards?.length ?? 0) > 0;
@@ -125,7 +140,28 @@ export default function DashboardPage() {
           </span>
         </div>
         <div className="flex flex-col gap-2 px-2.5 text-[0.7812rem] leading-normal text-[color-mix(in_srgb,var(--color-text)_66%,transparent)]">
-          <span>Boards are saved in this browser.</span>
+          {user ? (
+            <>
+              <span>
+                Signed in as <strong>{displayName(user)}</strong>. Boards are saved to your account.
+              </span>
+              <button
+                onClick={() => signOut().then(() => router.push("/login"))}
+                className="w-fit border-0 bg-transparent p-0 text-left text-[inherit] text-[var(--color-accent-700)] underline underline-offset-[3px]"
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <span>Boards are saved in this browser.</span>
+              {user === null && authEnabled() && (
+                <Link href="/login" className="no-underline">
+                  Sign in to keep them across devices
+                </Link>
+              )}
+            </>
+          )}
           <Link href="/" className="no-underline">
             About Margin
           </Link>
@@ -183,6 +219,12 @@ export default function DashboardPage() {
           <p role="alert" className="mb-6 bg-[var(--color-accent-100)] px-3 py-2 text-sm text-[var(--color-accent-800)]">
             Couldn&apos;t open browser storage, so your boards can&apos;t be loaded or saved. Check that
             storage isn&apos;t blocked (for example in a private window) and reload.
+          </p>
+        )}
+
+        {actionError && (
+          <p role="alert" className="mb-6 bg-[var(--color-accent-100)] px-3 py-2 text-sm text-[var(--color-accent-800)]">
+            That change didn&apos;t save. Check your connection and try again.
           </p>
         )}
 

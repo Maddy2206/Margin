@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { css, foc, hov } from "@/lib/inline-style";
 import { formatToday } from "@/lib/today";
-import { sendReset, signIn, signInWithGoogle, signUp } from "@/lib/auth";
+import { sendReset, signIn, signInWithGoogle, signUp, type AuthResult } from "@/lib/auth";
 
 type Mode = "signin" | "signup";
 
@@ -65,13 +65,31 @@ export default function Login() {
   const okE = /\S+@\S+\.\S+/.test(email);
   const okP = pw.length >= 6;
 
-  function go(label: string, run: () => Promise<unknown>) {
+  function fail(text: string) {
+    setBusy(false);
+    setTried(true);
+    setMsgKind("err");
+    setMsg(text);
+  }
+
+  /** `leaves`: the provider takes over the whole page (Google), so there is nothing to animate. */
+  function go(label: string, run: () => Promise<AuthResult>, leaves = false) {
     setBusy(true);
     setMsg("");
-    run().then(() => {
-      timers.current.push(setTimeout(() => { setTurning(true); setTurnLabel(label); }, 900));
-      timers.current.push(setTimeout(() => router.push("/dashboard"), 2000));
-    });
+    run()
+      .then((r) => {
+        if (!r.ok) return fail(r.error);
+        if (leaves) return;
+        if (r.needsConfirm) {
+          setBusy(false);
+          setMsgKind("ok");
+          setMsg("check your inbox to confirm ✉");
+          return;
+        }
+        timers.current.push(setTimeout(() => { setTurning(true); setTurnLabel(label); }, 900));
+        timers.current.push(setTimeout(() => router.push("/dashboard"), 2000));
+      })
+      .catch(() => fail("couldn't reach the server, try again"));
   }
 
   function submit(e: FormEvent) {
@@ -92,7 +110,12 @@ export default function Login() {
 
   async function forgot() {
     if (!okE) { setMsgKind("err"); setMsg("type your email first, then tap Forgot it?"); return; }
-    await sendReset(email);
+    const r = await sendReset(email).catch(() => null);
+    if (!r?.ok) {
+      setMsgKind("err");
+      setMsg(r ? r.error : "couldn't reach the server, try again");
+      return;
+    }
     setMsgKind("ok");
     setMsg("reset link sent, check your inbox ✉");
   }
@@ -228,7 +251,7 @@ export default function Login() {
             <div style={css(`display:flex;align-items:center;gap:12px;font-family:${CAVEAT};font-size:1.1875rem;color:#5b6b8c`)}>
               <span style={css("flex:1;height:1.5px;background:#c3d6ee")} />or<span style={css("flex:1;height:1.5px;background:#c3d6ee")} />
             </div>
-            <button type="button" className="btn btn-secondary btn-block" onClick={() => { if (!busy) go("turning to your desk…", signInWithGoogle); }} style={css("height:46px;font-size:0.9375rem;gap:10px;background:#fffefb")}>
+            <button type="button" className="btn btn-secondary btn-block" onClick={() => { if (!busy) go("turning to your desk…", signInWithGoogle, true); }} style={css("height:46px;font-size:0.9375rem;gap:10px;background:#fffefb")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={css("stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round")}><circle cx="12" cy="12" r="9" /><path d="M12 12h8" /></svg>
               Continue with Google
             </button>
@@ -237,6 +260,12 @@ export default function Login() {
               <button type="button" onClick={() => pickMode(up ? "signin" : "signup")} style={css("font:inherit;color:#2456c9;background:transparent;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px")}>
                 {up ? "Sign in" : "Create an account"}
               </button>
+            </p>
+            <p style={css("margin:-8px 0 0;font-size:0.7812rem;line-height:1.6;color:#5b6b8c;text-align:center")}>
+              <Link href="/dashboard" style={css("color:#5b6b8c;text-decoration:underline;text-underline-offset:3px")}>
+                Continue without an account
+              </Link>
+              {" "}(boards stay in this browser)
             </p>
           </form>
         </section>

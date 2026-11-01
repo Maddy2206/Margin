@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import type { Board, FocusSession, Highlight, PdfDoc, SceneRecord } from "./types";
+import type { Board, FocusSession, Highlight, PdfDoc, SceneRecord } from "../types";
 
 interface NoteTakerDB extends DBSchema {
   boards: { key: string; value: Board };
