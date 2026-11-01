@@ -5,8 +5,13 @@
 // auto-playing demos, the scroll-linked night transition and a 26 s simulated focus session. The markup lives in LandingView.
 import { Component } from "react";
 import LandingView from "./LandingView";
+import { ambient, loadSoundPrefs, type SoundId } from "@/lib/ambient";
 
 type S = Record<string, any>;
+
+const DEMO_SOUNDS: Record<string, SoundId> = { Rain: 'rain', 'Coffee shop': 'coffee', Ocean: 'ocean', 'Lo-fi': 'lofi' };
+const FOCUS_END = 0.78;
+const isBreak = (fp: number) => fp >= 0.59 && fp < 0.68;
 
 const QUOTES = [
   ['I stopped keeping a second window open for notes. Every quote still knows which page it came from.', 'Priya, second-year biology', 'card', -1.6],
@@ -29,6 +34,7 @@ class Landing extends Component<object, S> {
     picked: [], lastAdded: null, revealed: true, sweep: null, slip: null, act: -1, vh: 900, fp: 0, wfT: 0, wfPlay: true, wfVis: false, fT: 0.1, fRun: false, gsPh: 0, fsScale: 1, fSound: 'Rain', hlIdx: 0, cPh: 0, dPh: 0, pdfIn: true, font: 'Caveat', ink: '#1e3a8a', clipped: false, paper: 'Dotted', pdf: 0,
     secs: 24 * 60 + 12, sound: 'Rain'
   };
+  demoSound: SoundId | null = null;
   reduced = false; loopId = 0; raf: number | null = null; clock: any; demoT: any; user1 = false; userPdf = false; busy = false;
   onScroll: () => void = () => {};
   story: HTMLElement | null = null; desk: HTMLElement | null = null; fs: HTMLElement | null = null; focus: HTMLElement | null = null;
@@ -60,10 +66,23 @@ class Landing extends Component<object, S> {
     this.onScroll = () => { if (!this.raf) this.raf = requestAnimationFrame(this.update); };
     window.addEventListener('scroll', this.onScroll, { passive: true, capture: true });
     window.addEventListener('resize', this.onScroll);
+    document.addEventListener('visibilitychange', this.syncSound);
     this.update();
     this.clock = setInterval(() => { if (this.state.night > 0.05) this.setState((s: any) => ({ secs: s.secs > 0 ? s.secs - 1 : 1500 })); }, 1000);
   }
+  componentDidUpdate() { this.syncSound(); }
+  // Same rule as a real session: sound only during focus rounds. rAF pauses in a hidden tab, so the demo clock stops there too.
+  syncSound = () => {
+    const s = this.state;
+    const live = s.fRun && s.night > 0.05 && s.fT < FOCUS_END && !isBreak(s.fT) && !document.hidden;
+    const next: SoundId | null = live ? DEMO_SOUNDS[s.fSound] ?? null : null;
+    if (next === this.demoSound) return;
+    this.demoSound = next;
+    if (next) ambient.play(next); else ambient.fadeOut();
+  };
   componentWillUnmount() {
+    document.removeEventListener('visibilitychange', this.syncSound);
+    ambient.fadeOut(0.2);
     window.removeEventListener('scroll', this.onScroll, { capture: true });
     window.removeEventListener('resize', this.onScroll);
     cancelAnimationFrame(this.raf ?? 0); cancelAnimationFrame(this.loopId); clearInterval(this.clock);
@@ -171,8 +190,8 @@ class Landing extends Component<object, S> {
     ];
     const storyText = ['Mitochondria convert the chemical', 'energy in glucose into ATP through', 'cellular respiration, which is why', 'muscle cells contain thousands of them.'];
     const fp = s.fT, fseg = (a: number, b: number) => c((fp - a) / (b - a));
-    const enter = ease(fseg(0.2, 0.3)), r1 = fseg(0.34, 0.58), brk = fseg(0.6, 0.68), r2 = fseg(0.68, 0.78);
-    const inBreak = fp >= 0.59 && fp < 0.68;
+    const enter = ease(fseg(0.2, 0.3)), r1 = fseg(0.34, 0.58), brk = fseg(0.6, 0.68), r2 = fseg(0.68, FOCUS_END);
+    const inBreak = isBreak(fp);
     const secsLeft = fp < 0.59 ? 1500 * (1 - r1) : inBreak ? 300 * (1 - brk) : 1500 * (1 - r2);
     const fT = Math.round(secsLeft), ringP = fp < 0.59 ? r1 : inBreak ? brk : r2;
     const fPages = Math.round(1 + 11 * fseg(0.34, 0.78));
@@ -277,7 +296,7 @@ class Landing extends Component<object, S> {
       sheetH3: s.vh >= 700 ? 'min(700px, calc(100vh - 172px))' : '600px',
       sheetH4: s.vh >= 700 ? 'min(700px, calc(100vh - 196px))' : '600px',
       sheetH5: s.vh >= 700 ? 'min(700px, calc(100vh - 220px))' : '600px',
-      startFocusDemo: () => this.setState({ fT: 0.13, fRun: true }),
+      startFocusDemo: () => { ambient.setVolume(loadSoundPrefs().volume); ambient.unlock(); this.setState({ fT: 0.13, fRun: true }); },
       setupPe: fp < 0.2 ? 'auto' : 'none', sumPe: fp > 0.86 ? 'auto' : 'none',
       startGlow: fp <= 0.12 ? '0 0 0 4px color-mix(in srgb, var(--color-accent-400) 25%, transparent)' : 'none',
       fHint: fp <= 0.12 ? '← press Start focusing to run a session' : fp >= 1 ? 'that was 50 minutes, in 26 seconds' : '', fHintOp: fp <= 0.12 || fp >= 1 ? 1 : 0,
