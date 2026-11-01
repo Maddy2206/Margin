@@ -94,7 +94,7 @@ export default function NotesToolbar({
             className="btn btn-icon relative !h-8 !w-8 flex-none aria-pressed:!bg-[var(--color-accent)] aria-pressed:text-[var(--color-bg)]"
           >
             {t.icon}
-            <span aria-hidden className="absolute bottom-0 right-0.5 text-[9px] leading-none opacity-70">
+            <span aria-hidden className="absolute bottom-0 right-0.5 text-[0.5625rem] leading-none opacity-70">
               {t.key === "H" ? "" : t.key}
             </span>
           </button>

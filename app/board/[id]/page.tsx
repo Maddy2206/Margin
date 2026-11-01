@@ -394,10 +394,10 @@ export default function BoardPage() {
           </svg>
         </Link>
         <div className="mr-auto flex min-w-0 flex-col">
-          <span className="whitespace-nowrap text-[11px] uppercase tracking-[0.08em] text-[var(--color-accent-700)]">
+          <span className="whitespace-nowrap text-[0.6875rem] uppercase tracking-[0.08em] text-[var(--color-accent-700)]">
             {PAPERS.find((x) => x.id === board.paper)?.label} notebook · {docs.length} {docs.length === 1 ? "PDF" : "PDFs"}
           </span>
-          <span className="truncate text-[17px] font-extrabold tracking-[-0.01em]">{board.name}</span>
+          <span className="truncate text-[1.0625rem] font-extrabold tracking-[-0.01em]">{board.name}</span>
         </div>
         <span
           role="status"

@@ -96,7 +96,7 @@ export default function PdfDropzone({
           {hasFiles ? "+ Add more PDFs" : "Drop PDFs here, or choose files"}
         </span>
         {!hasFiles && (
-          <span className="text-[13px] text-[color-mix(in_srgb,var(--color-text)_72%,transparent)]">
+          <span className="text-[0.8125rem] text-[color-mix(in_srgb,var(--color-text)_72%,transparent)]">
             All the lectures, textbooks and study guides for one topic can live in one board
           </span>
         )}

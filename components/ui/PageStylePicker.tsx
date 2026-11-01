@@ -5,7 +5,7 @@ import type { Paper } from "@/lib/types";
 import PaperPreview from "./PaperPreview";
 
 const heading =
-  "mb-1.5 text-[11px] uppercase tracking-[0.08em] text-[var(--color-accent-700)]";
+  "mb-1.5 text-[0.6875rem] uppercase tracking-[0.08em] text-[var(--color-accent-700)]";
 
 /** Page type tiles (each a mini page), page colors and a larger live preview. */
 export default function PageStylePicker({

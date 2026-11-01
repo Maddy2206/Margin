@@ -55,7 +55,7 @@ export default function CreateBoardDialog({ onClose }: { onClose: () => void }) 
         onClick={(e) => e.stopPropagation()}
         className="max-h-[94vh] w-full max-w-2xl space-y-5 overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--color-divider)] bg-[var(--color-bg)] p-8 shadow-[var(--shadow-lg)]"
       >
-        <h2 className="m-0 font-[family-name:var(--font-heading)] text-[34px] font-normal leading-none">New board</h2>
+        <h2 className="m-0 font-[family-name:var(--font-heading)] text-[2.125rem] font-normal leading-none">New board</h2>
         <label className="block text-sm">
           <span className="mb-1 block text-zinc-600">Board name</span>
           <input
@@ -82,7 +82,7 @@ export default function CreateBoardDialog({ onClose }: { onClose: () => void }) 
           }}
         />
         {error && (
-          <p role="alert" className="border-l-2 border-[var(--color-accent)] bg-[var(--color-accent-100)] px-3 py-2 text-[13px] text-[var(--color-accent-800)]">
+          <p role="alert" className="border-l-2 border-[var(--color-accent)] bg-[var(--color-accent-100)] px-3 py-2 text-[0.8125rem] text-[var(--color-accent-800)]">
             {error}
           </p>
         )}

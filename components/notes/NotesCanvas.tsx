@@ -446,7 +446,7 @@ export default function NotesCanvas({
                 role="tab"
                 aria-selected={on}
                 onClick={() => goToPage(i)}
-                className={`flex flex-none items-center whitespace-nowrap border-r border-[var(--color-divider)] px-4 text-[13px] ${
+                className={`flex flex-none items-center whitespace-nowrap border-r border-[var(--color-divider)] px-4 text-[0.8125rem] ${
                   on
                     ? "-mb-0.5 h-[44px] bg-[var(--color-bg)] font-bold shadow-[inset_0_3px_0_var(--color-accent)]"
                     : "h-[42px] font-medium hover:bg-[color-mix(in_srgb,var(--color-text)_7%,transparent)]"
@@ -459,7 +459,7 @@ export default function NotesCanvas({
         </div>
         <button
           onClick={addPage}
-          className="flex flex-none items-center gap-1.5 whitespace-nowrap px-3.5 text-[13px] font-semibold text-[var(--color-accent-700)] hover:bg-[var(--color-accent-100)]"
+          className="flex flex-none items-center gap-1.5 whitespace-nowrap px-3.5 text-[0.8125rem] font-semibold text-[var(--color-accent-700)] hover:bg-[var(--color-accent-100)]"
         >
           <span aria-hidden className="text-lg leading-none">+</span> Add page
         </button>

@@ -66,7 +66,7 @@ export default function BoardCard({
   }, [menu]);
 
   const menuItem =
-    "block w-full px-2.5 py-2 text-left text-[13.5px] hover:bg-[color-mix(in_srgb,var(--color-text)_6%,transparent)]";
+    "block w-full px-2.5 py-2 text-left text-[0.8438rem] hover:bg-[color-mix(in_srgb,var(--color-text)_6%,transparent)]";
   const docs = board.docCount ?? 1;
   const color = paperColorOf(board.paper, board.paperColor);
   const lined = board.paper === "lined";
@@ -129,12 +129,12 @@ export default function BoardCard({
               }}
             >
               {lined && <span className="absolute inset-y-0 left-9 w-[1.5px] bg-[var(--margin-red)]" />}
-              <span className="line-clamp-2 font-[family-name:var(--font-caveat)] text-[25px] font-medium leading-7 text-[#2d2b2b]">
+              <span className="line-clamp-2 font-[family-name:var(--font-caveat)] text-[1.5625rem] font-medium leading-7 text-[#2d2b2b]">
                 {board.name}
               </span>
             </span>
             <span
-              className="absolute left-7 top-[-1px] rounded-t-[var(--radius-md)] border border-b-0 border-[var(--color-divider)] px-2.5 pb-1 pt-[3px] text-[10.5px] tracking-[0.04em] tabular-nums text-[var(--color-neutral-800)]"
+              className="absolute left-7 top-[-1px] rounded-t-[var(--radius-md)] border border-b-0 border-[var(--color-divider)] px-2.5 pb-1 pt-[3px] text-[0.6562rem] tracking-[0.04em] tabular-nums text-[var(--color-neutral-800)]"
               style={{ background: color, transform: hover ? "translateY(-6px) rotate(-0.6deg)" : "none", transition: ease }}
             >
               {docs} {docs === 1 ? "PDF" : "PDFs"}
@@ -142,8 +142,8 @@ export default function BoardCard({
           </Link>
           <div className="flex items-start gap-2">
             <Link href={`/board/${board.id}`} className="flex min-w-0 flex-1 flex-col gap-[3px] !text-inherit no-underline">
-              <span className="truncate font-[family-name:var(--font-heading)] text-[21px] font-semibold leading-[1.15]">{board.name}</span>
-              <span className="text-[12.5px] text-[color-mix(in_srgb,var(--color-text)_66%,transparent)]">
+              <span className="truncate font-[family-name:var(--font-heading)] text-[1.3125rem] font-semibold leading-[1.15]">{board.name}</span>
+              <span className="text-[0.7812rem] text-[color-mix(in_srgb,var(--color-text)_66%,transparent)]">
                 {board.paper[0].toUpperCase() + board.paper.slice(1)} notebook · opened {timeAgo(board.lastOpenedAt)}
               </span>
             </Link>
@@ -209,7 +209,7 @@ export default function BoardCard({
           onKeyDown={(e) => e.key === "Escape" && !busy && setConfirming(false)}
         >
           <div className="dialog" style={{ background: "var(--color-bg)" }}>
-            <div className="dialog-title" style={{ fontSize: 24 }}>Delete this board?</div>
+            <div className="dialog-title" style={{ fontSize: "1.5rem" }}>Delete this board?</div>
             <div className="dialog-body">
               &ldquo;{board.name}&rdquo; with all its PDFs, notes and highlights will be deleted. This can&apos;t be undone.
             </div>

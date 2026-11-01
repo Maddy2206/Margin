@@ -10,8 +10,8 @@ import { sendReset, signIn, signInWithGoogle, signUp } from "@/lib/auth";
 type Mode = "signin" | "signup";
 
 const CAVEAT = "var(--font-caveat), cursive";
-const HAND_INPUT = `height:40px;padding:0 2px;background:transparent;border:0;outline:none;font-family:${CAVEAT};font-size:24px;color:#1e3a8a`;
-const LABEL = "font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#5b6b8c";
+const HAND_INPUT = `height:40px;padding:0 2px;background:transparent;border:0;outline:none;font-family:${CAVEAT};font-size:1.5rem;color:#1e3a8a`;
+const LABEL = "font-size:0.6875rem;letter-spacing:.1em;text-transform:uppercase;color:#5b6b8c";
 const OPEN = "inset(-8px -8px -8px -8px)";
 const CLOSED = "inset(-8px 100% -8px -8px)";
 
@@ -117,8 +117,8 @@ export default function Login() {
       <div style={css(`position:fixed;top:0;bottom:0;right:var(--ml);width:2px;background:#e2575f;z-index:30;pointer-events:none;transform:${L ? "scaleY(1)" : "scaleY(0)"};transform-origin:50% 0;transition:transform 1.8s cubic-bezier(.6,0,.2,1) 3.4s`)} />
 
       <nav style={css("position:relative;z-index:25;display:flex;align-items:center;gap:24px;height:64px;padding:0 var(--pl);background:#fdfcf7")}>
-        <Link href="/" style={css("margin-right:auto;font-family:var(--font-heading);font-weight:600;font-size:25px;color:#1b2847;text-decoration:none")}>Margin</Link>
-        <Link href="/" style={css("display:flex;align-items:center;gap:6px;font-size:14px;color:#1b2847;text-decoration:none")} {...hov("color:#2456c9")}>
+        <Link href="/" style={css("margin-right:auto;font-family:var(--font-heading);font-weight:600;font-size:1.5625rem;color:#1b2847;text-decoration:none")}>Margin</Link>
+        <Link href="/" style={css("display:flex;align-items:center;gap:6px;font-size:0.875rem;color:#1b2847;text-decoration:none")} {...hov("color:#2456c9")}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={css("stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round")}><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></svg>
           Back to home
         </Link>
@@ -141,8 +141,8 @@ export default function Login() {
 
       <main style={css("min-height:calc(100vh - 64px);box-sizing:border-box;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:48px clamp(40px,7vw,120px);padding:48px var(--pl) 64px")}>
         <section style={css("flex:1 1 380px;max-width:560px;display:flex;flex-direction:column;gap:22px")}>
-          <span style={css(`font-family:${CAVEAT};font-size:22px;min-height:1.2em;color:#2456c9;clip-path:${L ? "inset(-10px -10px -10px -10px)" : "inset(-10px 100% -10px -10px)"};transition:clip-path 1s cubic-bezier(.45,0,.55,1) .4s`)}>{today}</span>
-          <h1 style={css("font-family:var(--font-heading);font-weight:400;font-size:clamp(44px,5.6vw,84px);line-height:1;letter-spacing:-0.02em;margin:0")}>
+          <span style={css(`font-family:${CAVEAT};font-size:1.375rem;min-height:1.2em;color:#2456c9;clip-path:${L ? "inset(-10px -10px -10px -10px)" : "inset(-10px 100% -10px -10px)"};transition:clip-path 1s cubic-bezier(.45,0,.55,1) .4s`)}>{today}</span>
+          <h1 style={css("font-family:var(--font-heading);font-weight:400;font-size:clamp(2.75rem,5.6vw,5.25rem);line-height:1;letter-spacing:-0.02em;margin:0")}>
             <span style={css("display:block;overflow:hidden;padding-bottom:.06em")}>
               <span style={css(`display:block;transform:${L ? "translateY(0)" : "translateY(105%)"};transition:transform 1.1s cubic-bezier(.2,.75,.15,1) .5s`)}>{h1a}</span>
             </span>
@@ -159,13 +159,13 @@ export default function Login() {
               </span>
             </span>
           </h1>
-          <p style={css(`margin:0;max-width:44ch;font-size:17px;line-height:32px;color:#34436a;opacity:${L ? 1 : 0};transition:opacity 1s 1s`)}>
+          <p style={css(`margin:0;max-width:44ch;font-size:1.0625rem;line-height:32px;color:#34436a;opacity:${L ? 1 : 0};transition:opacity 1s 1s`)}>
             {leadA}{" "}
             <span style={css(`background-image:linear-gradient(100deg,transparent 0 1%,#fff38a 2% 97%,transparent 98%);background-repeat:no-repeat;background-size:${L ? "100% 100%" : "0% 100%"};transition:background-size 1.1s cubic-bezier(.6,0,.35,1) 2.4s;padding:2px 3px;color:#1b2847`)}>{leadHl}</span>
           </p>
           <div style={css("display:flex;flex-direction:column;margin-top:6px;padding-left:4px")}>
             {notes.map(([m, t, c], i) => (
-              <div key={t} style={css(`height:32px;display:flex;align-items:flex-end;gap:10px;padding-bottom:2px;font-family:${CAVEAT};font-size:23px;line-height:1;color:${c};clip-path:${L ? OPEN : CLOSED};transition:clip-path 1.1s cubic-bezier(.45,0,.55,1) ${3.2 + i * 0.9}s`)}>
+              <div key={t} style={css(`height:32px;display:flex;align-items:flex-end;gap:10px;padding-bottom:2px;font-family:${CAVEAT};font-size:1.4375rem;line-height:1;color:${c};clip-path:${L ? OPEN : CLOSED};transition:clip-path 1.1s cubic-bezier(.45,0,.55,1) ${3.2 + i * 0.9}s`)}>
                 <span style={css("width:18px;flex:none")}>{m}</span>
                 {t}
               </div>
@@ -178,7 +178,7 @@ export default function Login() {
           <form onSubmit={submit} noValidate style={css("position:relative;display:flex;flex-direction:column;gap:20px;padding:34px 32px 28px;background-color:#fffefb;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,#dbe6f4 31px 32px);background-position:0 78px;border-radius:3px;box-shadow:0 2px 0 #ece8de,0 18px 44px rgba(30,40,70,.16);border-top:3px solid #e2575f")}>
             <div role="tablist" style={css("display:flex;gap:22px;border-bottom:1.5px solid #9fbde3;background:#fffefb;margin:-6px -32px 0;padding:0 32px")}>
               {([["signin", "Sign in"], ["signup", "Create account"]] as [Mode, string][]).map(([k, label]) => (
-                <button key={k} type="button" role="tab" aria-selected={mode === k} onClick={() => pickMode(k)} style={css(`position:relative;padding:8px 0 12px;background:transparent;border:0;font:inherit;font-size:15px;cursor:pointer;color:${mode === k ? "#1b2847" : "#7a86a0"};transition:color .25s`)}>
+                <button key={k} type="button" role="tab" aria-selected={mode === k} onClick={() => pickMode(k)} style={css(`position:relative;padding:8px 0 12px;background:transparent;border:0;font:inherit;font-size:0.9375rem;cursor:pointer;color:${mode === k ? "#1b2847" : "#7a86a0"};transition:color .25s`)}>
                   {label}
                   <span style={css(`position:absolute;left:0;right:0;bottom:-1.5px;height:2.5px;background:#2456c9;transform:${mode === k ? "scaleX(1)" : "scaleX(0)"};transform-origin:0 50%;transition:transform .45s cubic-bezier(.2,.75,.15,1)`)} />
                 </button>
@@ -199,11 +199,11 @@ export default function Login() {
               <span style={css(`display:flex;justify-content:space-between;align-items:baseline;${LABEL}`)}>
                 Password
                 {!up && (
-                  <button type="button" onClick={forgot} style={css("font:inherit;font-size:12px;letter-spacing:0;text-transform:none;color:#2456c9;background:transparent;border:0;padding:0;cursor:pointer")}>Forgot it?</button>
+                  <button type="button" onClick={forgot} style={css("font:inherit;font-size:0.75rem;letter-spacing:0;text-transform:none;color:#2456c9;background:transparent;border:0;padding:0;cursor:pointer")}>Forgot it?</button>
                 )}
               </span>
               <span style={css("position:relative;display:block")}>
-                <input type={showPw ? "text" : "password"} value={pw} onChange={(e) => { setPw(e.target.value); setMsg(""); }} placeholder="at least 6 characters" autoComplete={up ? "new-password" : "current-password"} style={css(`width:100%;box-sizing:border-box;height:40px;padding:0 40px 0 2px;background:transparent;border:0;border-bottom:1.5px solid ${tried && okE && !okP ? "#d84a52" : "#9fbde3"};outline:none;font-family:var(--font-body);font-size:16px;letter-spacing:.08em;color:#1e3a8a`)} {...foc("border-bottom:2px solid #2456c9")} />
+                <input type={showPw ? "text" : "password"} value={pw} onChange={(e) => { setPw(e.target.value); setMsg(""); }} placeholder="at least 6 characters" autoComplete={up ? "new-password" : "current-password"} style={css(`width:100%;box-sizing:border-box;height:40px;padding:0 40px 0 2px;background:transparent;border:0;border-bottom:1.5px solid ${tried && okE && !okP ? "#d84a52" : "#9fbde3"};outline:none;font-family:var(--font-body);font-size:1rem;letter-spacing:.08em;color:#1e3a8a`)} {...foc("border-bottom:2px solid #2456c9")} />
                 <button type="button" onClick={() => setShowPw((s) => !s)} aria-label={showPw ? "Hide password" : "Show password"} title={showPw ? "Hide password" : "Show password"} style={css("position:absolute;right:0;top:4px;width:34px;height:34px;display:grid;place-items:center;background:transparent;border:0;cursor:pointer;color:#5b6b8c;border-radius:4px")} {...hov("color:#2456c9")}>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={css("stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round")}>
                     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
@@ -214,9 +214,9 @@ export default function Login() {
               </span>
             </label>
 
-            <div role="status" style={css(`min-height:26px;font-family:${CAVEAT};font-size:21px;line-height:1.1;color:${msgKind === "ok" ? "#2456c9" : "#d84a52"};opacity:${msg ? 1 : 0};transform:${msg ? "translateY(0) rotate(-1deg)" : "translateY(-4px)"};transition:opacity .3s,transform .3s`)}>{msg}</div>
+            <div role="status" style={css(`min-height:26px;font-family:${CAVEAT};font-size:1.3125rem;line-height:1.1;color:${msgKind === "ok" ? "#2456c9" : "#d84a52"};opacity:${msg ? 1 : 0};transform:${msg ? "translateY(0) rotate(-1deg)" : "translateY(-4px)"};transition:opacity .3s,transform .3s`)}>{msg}</div>
 
-            <button type="submit" className="btn btn-primary btn-block" style={css(`height:48px;font-size:16px;gap:10px;margin-top:-8px;background:${busy ? "color-mix(in srgb, var(--color-accent) 12%, transparent)" : "transparent"};transition:background .3s`)}>
+            <button type="submit" className="btn btn-primary btn-block" style={css(`height:48px;font-size:1rem;gap:10px;margin-top:-8px;background:${busy ? "color-mix(in srgb, var(--color-accent) 12%, transparent)" : "transparent"};transition:background .3s`)}>
               {busy ? "Opening your desk" : up ? "Create account" : "Sign in"}
               <span style={css(`display:${busy ? "inline-flex" : "none"};gap:3px`)}>
                 {[0, 0.2, 0.4].map((d) => (
@@ -225,14 +225,14 @@ export default function Login() {
               </span>
             </button>
 
-            <div style={css(`display:flex;align-items:center;gap:12px;font-family:${CAVEAT};font-size:19px;color:#5b6b8c`)}>
+            <div style={css(`display:flex;align-items:center;gap:12px;font-family:${CAVEAT};font-size:1.1875rem;color:#5b6b8c`)}>
               <span style={css("flex:1;height:1.5px;background:#c3d6ee")} />or<span style={css("flex:1;height:1.5px;background:#c3d6ee")} />
             </div>
-            <button type="button" className="btn btn-secondary btn-block" onClick={() => { if (!busy) go("turning to your desk…", signInWithGoogle); }} style={css("height:46px;font-size:15px;gap:10px;background:#fffefb")}>
+            <button type="button" className="btn btn-secondary btn-block" onClick={() => { if (!busy) go("turning to your desk…", signInWithGoogle); }} style={css("height:46px;font-size:0.9375rem;gap:10px;background:#fffefb")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={css("stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round")}><circle cx="12" cy="12" r="9" /><path d="M12 12h8" /></svg>
               Continue with Google
             </button>
-            <p style={css("margin:0;font-size:12.5px;line-height:1.6;color:#5b6b8c;text-align:center")}>
+            <p style={css("margin:0;font-size:0.7812rem;line-height:1.6;color:#5b6b8c;text-align:center")}>
               {up ? "Already have a notebook?" : "New to Margin?"}{" "}
               <button type="button" onClick={() => pickMode(up ? "signin" : "signup")} style={css("font:inherit;color:#2456c9;background:transparent;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px")}>
                 {up ? "Sign in" : "Create an account"}
@@ -244,7 +244,7 @@ export default function Login() {
 
       <div aria-hidden="true" style={css(`position:fixed;inset:0;z-index:60;pointer-events:none;background-color:#fdfcf7;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,#c3d6ee 31px 32px);box-shadow:-30px 0 60px rgba(30,40,70,.18);transform:${turning ? "translateX(0)" : "translateX(105%)"};transition:transform .9s cubic-bezier(.7,0,.25,1)`)}>
         <div style={css("position:absolute;top:0;bottom:0;left:var(--ml);width:7px;margin-left:-3px;box-sizing:border-box;border-left:2px solid #e2575f;border-right:2px solid #e2575f")} />
-        <div style={css(`position:absolute;inset:0;display:grid;place-items:center;font-family:${CAVEAT};font-size:40px;color:#2456c9`)}>{turnLabel}</div>
+        <div style={css(`position:absolute;inset:0;display:grid;place-items:center;font-family:${CAVEAT};font-size:2.5rem;color:#2456c9`)}>{turnLabel}</div>
       </div>
     </div>
   );

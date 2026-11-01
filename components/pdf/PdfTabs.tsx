@@ -70,7 +70,7 @@ export default function PdfTabs({
             <div
               key={d.id}
               ref={active ? activeRef : undefined}
-              className={`group flex max-w-56 flex-none items-center gap-1.5 border-r border-[var(--color-divider)] px-3 text-[13px] ${
+              className={`group flex max-w-56 flex-none items-center gap-1.5 border-r border-[var(--color-divider)] px-3 text-[0.8125rem] ${
                 active
                   ? "-mb-0.5 bg-[var(--color-bg)] font-bold shadow-[inset_0_3px_0_var(--color-accent)]"
                   : "hover:bg-[color-mix(in_srgb,var(--color-text)_7%,transparent)]"

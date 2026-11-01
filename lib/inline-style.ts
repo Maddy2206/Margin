@@ -1,7 +1,11 @@
 import type { CSSProperties, MouseEvent, FocusEvent } from "react";
 
 /** Turns a CSS declaration string ("a-b:c;d:e") into a React style object. Used by the notebook pages, whose markup comes straight from the design files. */
+const cache = new Map<string, CSSProperties>();
+
 export function css(s: string): CSSProperties {
+  const hit = cache.get(s);
+  if (hit) return hit;
   const out: Record<string, string> = {};
   for (const decl of s.split(";")) {
     const i = decl.indexOf(":");
@@ -10,6 +14,8 @@ export function css(s: string): CSSProperties {
     if (!key) continue;
     out[key.startsWith("--") ? key : key.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())] = decl.slice(i + 1).trim();
   }
+  if (cache.size > 5000) cache.clear();
+  cache.set(s, out as CSSProperties);
   return out as CSSProperties;
 }
 

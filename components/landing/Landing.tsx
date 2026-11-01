@@ -20,8 +20,8 @@ const QUOTES = [
 ];
 const GS_SEQ = [[0, 900], [1, 1000], [2, 450], [3, 2400], [4, 1000], [5, 450], [6, 2600]];
 const card = ([text, who, kind, rot]: any[]) => kind === 'card'
-  ? { text, who, bg: '#fbf9f6', img: 'repeating-linear-gradient(to bottom, transparent 0 27px, color-mix(in srgb, #201f1d 10%, transparent) 27px 28px)', top: '2px solid var(--color-accent)', family: 'var(--font-body)', size: '15px', lh: '28px', ink: 'var(--color-text)', tape: 0, tf: 'rotate(' + rot + 'deg)' }
-  : { text, who, bg: 'var(--color-accent-100)', img: 'none', top: '0', family: "var(--font-caveat), cursive", size: '25px', lh: '1.25', ink: '#1e3a8a', tape: 1, tf: 'rotate(' + rot + 'deg)' };
+  ? { text, who, bg: '#fbf9f6', img: 'repeating-linear-gradient(to bottom, transparent 0 1.6875rem, color-mix(in srgb, #201f1d 10%, transparent) 1.6875rem 1.75rem)', top: '2px solid var(--color-accent)', family: 'var(--font-body)', size: '0.9375rem', lh: '1.75rem', ink: 'var(--color-text)', tape: 0, tf: 'rotate(' + rot + 'deg)' }
+  : { text, who, bg: 'var(--color-accent-100)', img: 'none', top: '0', family: "var(--font-caveat), cursive", size: '1.5625rem', lh: '1.25', ink: '#1e3a8a', tape: 1, tf: 'rotate(' + rot + 'deg)' };
 
 class Landing extends Component<object, S> {
   state: S = {
@@ -42,6 +42,9 @@ class Landing extends Component<object, S> {
     if (this.reduced) this.setState({ wfT: 0.995, wfPlay: false });
     let last = performance.now(), hold = 0;
     const loop = (t: number) => {
+      this.loopId = requestAnimationFrame(loop);
+      // ~30 fps is plenty for these animations and halves the render work.
+      if (t - last < 32) return;
       const dt = Math.min(64, t - last); last = t;
       const s = this.state, n: S = {};
       if (s.wfVis && s.wfPlay) {
@@ -50,7 +53,6 @@ class Landing extends Component<object, S> {
       }
       if (s.fRun) { const v = s.fT + dt / 26000; if (v >= 1) { n.fT = 1; n.fRun = false; } else n.fT = v; }
       if (Object.keys(n).length) this.setState(n);
-      this.loopId = requestAnimationFrame(loop);
     };
     this.loopId = requestAnimationFrame(loop);
     requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ loaded: true })));
@@ -59,7 +61,7 @@ class Landing extends Component<object, S> {
     window.addEventListener('scroll', this.onScroll, { passive: true, capture: true });
     window.addEventListener('resize', this.onScroll);
     this.update();
-    this.clock = setInterval(() => this.setState((s: any) => ({ secs: s.secs > 0 ? s.secs - 1 : 1500 })), 1000);
+    this.clock = setInterval(() => { if (this.state.night > 0.05) this.setState((s: any) => ({ secs: s.secs > 0 ? s.secs - 1 : 1500 })); }, 1000);
   }
   componentWillUnmount() {
     window.removeEventListener('scroll', this.onScroll, { capture: true });
@@ -90,7 +92,10 @@ class Landing extends Component<object, S> {
     document.querySelectorAll('[data-sheet]').forEach((el, i) => { const r = el.getBoundingClientRect(); if (r.top < vh * 0.6 && r.bottom > 140) act = i; });
     n.act = act;
     const prevAct = this.state.act;
-    this.setState(n, () => { if (act !== prevAct) this.startDemo(act); });
+    // Scroll fires constantly; only re-render when a value actually changed.
+    const cur = this.state;
+    const changed = Object.keys(n).some((k) => cur[k] !== n[k]);
+    if (changed) this.setState(n, () => { if (act !== prevAct) this.startDemo(act); });
   };
 
   later(ms: number, fn: () => void) { clearTimeout(this.demoT); this.demoT = setTimeout(fn, ms); }
@@ -187,7 +192,7 @@ class Landing extends Component<object, S> {
       ['Chloroplasts capture light energy', ' and build glucose from CO₂ and water.', 'chloroplast: light → glucose', '#a7f3d0']
     ];
 
-    const fontDefs: Record<string, any> = { Caveat: { f: "var(--font-caveat), cursive", sz: 26, ui: '19px' }, Kalam: { f: "var(--font-kalam), cursive", sz: 19, ui: '14px' }, 'Patrick Hand': { f: "var(--font-patrick), cursive", sz: 22, ui: '16px' } };
+    const fontDefs: Record<string, any> = { Caveat: { f: "var(--font-caveat), cursive", sz: 26, ui: '1.1875rem' }, Kalam: { f: "var(--font-kalam), cursive", sz: 19, ui: '0.875rem' }, 'Patrick Hand': { f: "var(--font-patrick), cursive", sz: 22, ui: '1rem' } };
     const sentences = [
       'Mitochondria convert the chemical energy in glucose into ATP through cellular respiration.',
       'The inner membrane is folded into cristae, which increase the surface area for the electron transport chain.',
@@ -295,7 +300,7 @@ class Landing extends Component<object, S> {
       hlNext: () => { clearTimeout(this.demoT); this.setState((st: any) => ({ hlIdx: (st.hlIdx + 1) % HLS.length })); },
 
       fonts: Object.keys(fontDefs).map((name: any) => ({ name, family: fontDefs[name].f, size: fontDefs[name].ui, pressed: String(s.font === name), c: s.font === name ? 'var(--color-accent-700)' : 'var(--color-text)', sh: s.font === name ? 'inset 0 0 0 1px var(--color-accent)' : 'none', pick: () => this.setState({ font: name }) })),
-      fFamily: fontDefs[s.font].f, fSize: fontDefs[s.font].sz + 'px',
+      fFamily: fontDefs[s.font].f, fSize: (fontDefs[s.font].sz / 16) + 'rem',
       inks: inks.map((k: any) => ({ ...k, ring: s.ink === k.c ? '1.5px solid var(--color-text)' : '1.5px solid transparent', pick: () => this.setState({ ink: k.c }) })),
       inkColor: s.ink,
       sentences: sentences.map((t, i) => {

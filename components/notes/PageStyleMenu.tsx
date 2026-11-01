@@ -30,7 +30,7 @@ export default function PageStyleMenu({
       >
         <span className="h-4 w-4 border border-black/30" style={{ background: color }} aria-hidden />
         Page style
-        <span aria-hidden className="text-[10px]">▾</span>
+        <span aria-hidden className="text-[0.625rem]">▾</span>
       </button>
       {open && (
         <div

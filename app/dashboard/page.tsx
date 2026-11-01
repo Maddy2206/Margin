@@ -89,17 +89,17 @@ export default function DashboardPage() {
   }
 
   const hasBoards = (boards?.length ?? 0) > 0;
-  const label = "text-[11px] uppercase tracking-[0.1em] text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]";
+  const label = "text-[0.6875rem] uppercase tracking-[0.1em] text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]";
 
   return (
     <div className="nb nb-page flex flex-wrap">
       <aside
         className="relative z-[5] flex w-full flex-none flex-col gap-[30px] border-b border-r-0 border-[var(--color-divider)] bg-[var(--paper)] px-[22px] py-6 md:sticky md:top-0 md:h-screen md:w-[248px] md:border-b-0 md:border-r-[6px] md:border-double md:border-r-[var(--margin-red)]"
       >
-        <Link href="/" className="font-[family-name:var(--font-heading)] text-[26px] font-semibold tracking-[-0.01em] !text-[var(--color-text)] no-underline">
+        <Link href="/" className="font-[family-name:var(--font-heading)] text-[1.625rem] font-semibold tracking-[-0.01em] !text-[var(--color-text)] no-underline">
           Margin
         </Link>
-        <button onClick={() => setCreating(true)} className="btn btn-primary !h-10 !justify-start gap-2 !text-[15px]">
+        <button onClick={() => setCreating(true)} className="btn btn-primary !h-10 !justify-start gap-2 !text-[0.9375rem]">
           <PlusIcon />
           New board
         </button>
@@ -113,7 +113,7 @@ export default function DashboardPage() {
         <FocusStats sessions={sessions} now={statsNow} />
         <div
           aria-hidden="true"
-          className="mt-auto flex -rotate-3 items-center gap-2.5 px-2.5 font-[family-name:var(--font-caveat)] text-[19px] leading-[1.05] text-[var(--pen-red)]"
+          className="mt-auto flex -rotate-3 items-center gap-2.5 px-2.5 font-[family-name:var(--font-caveat)] text-[1.1875rem] leading-[1.05] text-[var(--pen-red)]"
         >
           <svg width="28" height="28" viewBox="0 0 34 34" fill="none" stroke="#e0a526" className="flex-none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M17 3 L21 13 L32 13 L23 20 L27 31 L17 24 L7 31 L11 20 L2 13 L13 13 Z" />
@@ -124,7 +124,7 @@ export default function DashboardPage() {
             don&rsquo;t panic.
           </span>
         </div>
-        <div className="flex flex-col gap-2 px-2.5 text-[12.5px] leading-normal text-[color-mix(in_srgb,var(--color-text)_66%,transparent)]">
+        <div className="flex flex-col gap-2 px-2.5 text-[0.7812rem] leading-normal text-[color-mix(in_srgb,var(--color-text)_66%,transparent)]">
           <span>Boards are saved in this browser.</span>
           <Link href="/" className="no-underline">
             About Margin
@@ -136,7 +136,7 @@ export default function DashboardPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-[clamp(8px,1.6vw,24px)] w-0.5 bg-[var(--margin-red)]" />
         <header className="flex flex-wrap items-end gap-x-7 gap-y-5 pb-7">
           <div className="mr-auto flex flex-col gap-1.5">
-            <span className="min-h-[1.2em] font-[family-name:var(--font-caveat)] text-[22px] text-[var(--pen-blue)]">{today}</span>
+            <span className="min-h-[1.2em] font-[family-name:var(--font-caveat)] text-[1.375rem] text-[var(--pen-blue)]">{today}</span>
             <h1 className="relative m-0 font-[family-name:var(--font-heading)] text-[clamp(40px,4.6vw,64px)] font-normal leading-none tracking-[-0.015em]">
               Your desk
               <span
@@ -164,7 +164,7 @@ export default function DashboardPage() {
                 aria-label="Search boards"
                 style={{ paddingLeft: 34, paddingRight: 34, height: 38 }}
               />
-              <span className="pointer-events-none absolute right-[9px] top-[9px] rounded-[var(--radius-sm)] border border-[var(--color-divider)] px-1.5 text-[11px] leading-[18px] text-[color-mix(in_srgb,var(--color-text)_60%,transparent)]">
+              <span className="pointer-events-none absolute right-[9px] top-[9px] rounded-[var(--radius-sm)] border border-[var(--color-divider)] px-1.5 text-[0.6875rem] leading-[18px] text-[color-mix(in_srgb,var(--color-text)_60%,transparent)]">
                 /
               </span>
             </div>
@@ -205,14 +205,14 @@ export default function DashboardPage() {
               {!query && (
                 <button onClick={() => setCreating(true)} className="flex flex-col gap-3.5 border-0 bg-transparent p-0 text-left text-inherit">
                   <span className="grid h-[220px] w-full place-items-center rounded-[var(--radius-sm)] border-[1.5px] border-dashed border-[color-mix(in_srgb,var(--color-accent)_70%,transparent)] transition hover:border-[var(--color-accent)] hover:bg-[color-mix(in_srgb,var(--color-accent)_8%,transparent)]">
-                    <span className="flex flex-col items-center gap-1.5 font-[family-name:var(--font-caveat)] text-[30px] text-[var(--color-accent-700)]">
-                      <span className="text-[44px] leading-[0.8]">+</span>
+                    <span className="flex flex-col items-center gap-1.5 font-[family-name:var(--font-caveat)] text-[1.875rem] text-[var(--color-accent-700)]">
+                      <span className="text-[2.75rem] leading-[0.8]">+</span>
                       new board
                     </span>
                   </span>
                   <span className="flex flex-col gap-[3px]">
-                    <span className="font-[family-name:var(--font-heading)] text-[21px] font-semibold leading-[1.15]">Start a board</span>
-                    <span className="text-[12.5px] text-[color-mix(in_srgb,var(--color-text)_66%,transparent)]">Upload one or more PDFs</span>
+                    <span className="font-[family-name:var(--font-heading)] text-[1.3125rem] font-semibold leading-[1.15]">Start a board</span>
+                    <span className="text-[0.7812rem] text-[color-mix(in_srgb,var(--color-text)_66%,transparent)]">Upload one or more PDFs</span>
                   </span>
                 </button>
               )}
@@ -238,7 +238,7 @@ export default function DashboardPage() {
 /** Shown when the library is empty: a PDF page turning into a handwritten notebook page. */
 function EmptyDesk({ onCreate }: { onCreate: () => void }) {
   const ruled = "repeating-linear-gradient(to bottom,transparent 0 27px,color-mix(in srgb,var(--color-text) 12%,transparent) 27px 28px)";
-  const hand = "flex h-7 items-end pb-[3px] font-[family-name:var(--font-caveat)] text-[21px] leading-none";
+  const hand = "flex h-7 items-end pb-[3px] font-[family-name:var(--font-caveat)] text-[1.3125rem] leading-none";
   return (
     <section className="flex flex-wrap items-center gap-x-[72px] gap-y-14 pb-12 pt-6">
       <div className="flex max-w-[460px] flex-[1_1_320px] flex-col gap-5">
@@ -257,7 +257,7 @@ function EmptyDesk({ onCreate }: { onCreate: () => void }) {
       </div>
       <div aria-hidden="true" className="relative hidden h-[380px] max-w-[620px] flex-[1_1_420px] min-[900px]:block">
         <div className="absolute left-0 top-5 flex h-80 w-[52%] -rotate-2 flex-col gap-2 bg-[var(--color-neutral-100)] px-6 py-[22px] shadow-[var(--shadow-md)]">
-          <div className="mb-1.5 border-b border-[var(--color-neutral-300)] pb-1.5 text-[9px] uppercase tracking-[0.08em] text-[var(--color-neutral-700)]">Your PDF · p. 1</div>
+          <div className="mb-1.5 border-b border-[var(--color-neutral-300)] pb-1.5 text-[0.5625rem] uppercase tracking-[0.08em] text-[var(--color-neutral-700)]">Your PDF · p. 1</div>
           {[100, 92, 97].map((w) => (
             <div key={w} className="h-[5px] bg-[var(--color-neutral-300)]" style={{ width: `${w}%` }} />
           ))}
@@ -277,7 +277,7 @@ function EmptyDesk({ onCreate }: { onCreate: () => void }) {
           style={{ backgroundImage: ruled }}
         >
           <div className="absolute inset-y-0 left-[34px] w-[1.5px] bg-[var(--margin-red)]" />
-          <div className={`${hand} !text-[25px] font-medium text-[#2d2b2b]`}>Your notebook</div>
+          <div className={`${hand} !text-[1.5625rem] font-medium text-[#2d2b2b]`}>Your notebook</div>
           <div className="h-7" />
           <div className={`${hand} text-[#1e3a8a]`}>the passage you highlighted,</div>
           <div className={`${hand} text-[#1e3a8a]`}>word for word, in your hand</div>
