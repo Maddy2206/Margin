@@ -105,6 +105,8 @@ export async function createBoard(
   paper: Board["paper"] = "lined",
   paperColor?: string,
 ): Promise<Board> {
+  // Guest data lives only in this browser: ask it not to evict the data when disk space runs low.
+  void navigator.storage?.persist?.().catch(() => {});
   const now = Date.now();
   const boardId = crypto.randomUUID();
   const docs = files.map((f, i) => newDoc(boardId, f, now + i));
@@ -280,4 +282,10 @@ export async function closeOtherActiveSessions(boardId: string, keepId: string):
     }
   }
   await tx.done;
+}
+
+/** Used after the guest's focus history has been uploaded to their account. */
+export async function deleteFocusSessions(ids: string[]): Promise<void> {
+  const tx = (await db()).transaction("focusSessions", "readwrite");
+  await Promise.all([...ids.map((i) => tx.store.delete(i)), tx.done]);
 }

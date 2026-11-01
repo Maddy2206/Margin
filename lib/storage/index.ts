@@ -4,7 +4,7 @@ import { supabase } from "../supabase";
 
 // The one storage API the app imports. Each call picks where the data lives:
 // the signed-in user's Supabase account, or this browser's IndexedDB for guests.
-type Backend = typeof local;
+type Backend = Omit<typeof local, "deleteFocusSessions">; // that one is only used by ./migrate
 
 async function backend(): Promise<Backend> {
   if (!supabase) return local;

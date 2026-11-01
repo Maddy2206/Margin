@@ -433,6 +433,41 @@ export function saveScene(scene: SceneRecord): Promise<void> {
   return next;
 }
 
+/* ---------- guest -> account upload ---------- */
+
+/**
+ * Uploads one board that was made as a guest. Every write is an upsert, so an interrupted upload can simply
+ * be run again. The caller deletes the local copy only after this resolves.
+ */
+export async function importBoard(input: {
+  board: Board;
+  docs: PdfDoc[];
+  blobs: Map<string, Blob>;
+  highlights: Highlight[];
+  scene?: SceneRecord;
+}): Promise<void> {
+  const user = await uid();
+  const { board, docs, blobs, scene } = input;
+  await pool(docs, 3, async (d) => {
+    const blob = blobs.get(d.id);
+    if (!blob) throw new Error(`The file for "${d.name}" is missing`);
+    await uploadPdf(user, d.id, blob);
+  });
+  check(await sb().from("boards").upsert({ id: board.id, ...toColumns(board, BOARD_COLS) }));
+  if (docs.length) check(await sb().from("documents").upsert(docs.map(docRow)));
+  const docIds = new Set(docs.map((d) => d.id));
+  const highlights = input.highlights.filter((h) => docIds.has(h.docId));
+  if (highlights.length) {
+    check(await sb().from("highlights").upsert(highlights.map((h) => ({ id: h.id, board_id: h.boardId, doc_id: h.docId, data: h }))));
+  }
+  if (scene) {
+    // A half-finished earlier attempt may have left a scene row; start the scene fresh.
+    check(await sb().from("scenes").delete().eq("board_id", board.id));
+    versions.set(board.id, 0);
+    await saveScene(scene);
+  }
+}
+
 /* ---------- focus sessions ---------- */
 
 export async function saveFocusSession(s: FocusSession): Promise<void> {

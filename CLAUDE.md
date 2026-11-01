@@ -5,7 +5,7 @@
 ## Commands and layout
 
 - `npm run dev` (port 3000), `npm run build`, `npm run start`, `npm run lint`. Type-check with `npx tsc --noEmit`. There are no automated tests.
-- Client-only app, no backend. Routes in `app/`, UI in `components/`, logic and IndexedDB storage in `lib/`. Details: [docs/architecture.md](docs/architecture.md). User-facing overview: [README.md](README.md).
+- Client-only app with no server code of its own; signed-in users' data lives in Supabase (talked to straight from the browser, access control is row-level security in `supabase/schema.sql`), guests' in IndexedDB. Routes in `app/`, UI in `components/`, logic and both storage backends in `lib/` (the app imports only `@/lib/storage`; `local.ts` and `cloud.ts` must keep the same function signatures). Never put the Supabase `service_role` key in the repo or a `NEXT_PUBLIC_` variable. Details: [docs/architecture.md](docs/architecture.md). User-facing overview: [README.md](README.md).
 - `devpost/` and `agent/`, `.agents/`, `.claude/skills/` are hackathon-process material. `devpost/*.md` are historical snapshots and may not match the app; do not treat them as current.
 
 ## Documentation maintenance

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authEnabled, displayName, signOut, useUser } from "@/lib/auth";
+import { countLocalBoards, uploadLocalBoards } from "@/lib/storage/migrate";
 import { formatToday } from "@/lib/today";
 import { deleteBoard, listBoards, listFocusSessions, updateBoard } from "@/lib/storage";
 import type { Board, FocusSession } from "@/lib/types";
@@ -29,6 +30,9 @@ export default function DashboardPage() {
   const [creating, setCreating] = useState(false);
   const [storageError, setStorageError] = useState(false);
   const [actionError, setActionError] = useState(false);
+  const [localCount, setLocalCount] = useState(0);
+  const [uploading, setUploading] = useState<{ done: number; total: number; name: string } | null>(null);
+  const [uploadFailed, setUploadFailed] = useState<{ name: string; error: string }[]>([]);
   const [sessions, setSessions] = useState<FocusSession[]>([]);
   const [statsNow, setStatsNow] = useState(0);
   const [query, setQuery] = useState("");
@@ -57,6 +61,35 @@ export default function DashboardPage() {
       })
       .catch(() => {});
   }, []);
+
+  // Boards made as a guest are still in this browser: offer to move them into the account.
+  useEffect(() => {
+    if (user) countLocalBoards().then(setLocalCount);
+  }, [user]);
+
+  function refresh() {
+    listBoards().then(setBoards).catch(() => {});
+    listFocusSessions()
+      .then((l) => {
+        setSessions(l);
+        setStatsNow(Date.now());
+      })
+      .catch(() => {});
+  }
+
+  async function uploadBoards() {
+    setUploadFailed([]);
+    setUploading({ done: 0, total: localCount, name: "" });
+    try {
+      const r = await uploadLocalBoards((done, total, name) => setUploading({ done, total, name }));
+      setUploadFailed(r.failed);
+    } catch {
+      setUploadFailed([{ name: "your boards", error: "Couldn't read the boards stored in this browser." }]);
+    }
+    setUploading(null);
+    setLocalCount(await countLocalBoards());
+    refresh();
+  }
 
   // "/" focuses the search box.
   useEffect(() => {
@@ -220,6 +253,34 @@ export default function DashboardPage() {
             Couldn&apos;t open browser storage, so your boards can&apos;t be loaded or saved. Check that
             storage isn&apos;t blocked (for example in a private window) and reload.
           </p>
+        )}
+
+        {user && (localCount > 0 || uploading) && (
+          <div role="status" className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-l-2 border-[var(--color-accent)] bg-[var(--color-accent-100)] px-3 py-2.5 text-sm text-[var(--color-accent-800)]">
+            {uploading ? (
+              <span>
+                Uploading {Math.min(uploading.done + 1, uploading.total)} of {uploading.total}
+                {uploading.name ? `: ${uploading.name}` : ""}. Keep this tab open.
+              </span>
+            ) : (
+              <>
+                <span>
+                  {localCount === 1 ? "1 board is" : `${localCount} boards are`} still only in this browser.
+                  Upload {localCount === 1 ? "it" : "them"} to your account to keep {localCount === 1 ? "it" : "them"} safe and see {localCount === 1 ? "it" : "them"} on every device.
+                </span>
+                <button onClick={uploadBoards} className="btn btn-primary !h-8 !px-3 !text-[0.8125rem]">
+                  Upload {localCount === 1 ? "board" : `${localCount} boards`}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {uploadFailed.length > 0 && (
+          <div role="alert" className="mb-6 bg-[var(--color-accent-100)] px-3 py-2 text-sm text-[var(--color-accent-800)]">
+            Couldn&apos;t upload {uploadFailed.map((f) => `“${f.name}” (${f.error})`).join(", ")}. They are still in this
+            browser, so nothing is lost. Try again in a moment.
+          </div>
         )}
 
         {actionError && (
