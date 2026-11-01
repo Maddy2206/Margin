@@ -1,15 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-// Logic ported from the "Margin Landing v2" design file: a 20 s workflow timeline, six sticky feature sheets with
+// Logic ported from the "Margin Landing v2" design file: six sticky feature sheets with
 // auto-playing demos, the scroll-linked night transition and a 26 s simulated focus session. The markup lives in LandingView.
 import { Component } from "react";
 import LandingView from "./LandingView";
 import { ambient, loadSoundPrefs, type SoundId } from "@/lib/ambient";
 
 type S = Record<string, any>;
-
-const WF_MS = 20000;
 
 const DEMO_SOUNDS: Record<string, SoundId> = { Rain: 'rain', 'Coffee shop': 'coffee', Ocean: 'ocean', 'Lo-fi': 'lofi' };
 const FOCUS_END = 0.78;
@@ -32,23 +30,20 @@ const card = ([text, who, kind, rot]: any[]) => kind === 'card'
 
 class Landing extends Component<object, S> {
   state: S = {
-    loaded: false, sp: 0, night: 0, strike: 0, scale: 1, page: 1, total: 7, label: 'Title', wide: true, scrolled: false, foot: 0,
-    picked: [], lastAdded: null, revealed: true, sweep: null, slip: null, act: -1, vh: 900, fp: 0, wfT: 0, wfPlay: true, wfVis: false, fT: 0.1, fRun: false, gsPh: 0, fsScale: 1, fSound: 'Rain', hlIdx: 0, cPh: 0, dPh: 0, pdfIn: true, font: 'Caveat', ink: '#1e3a8a', clipped: false, paper: 'Dotted', pdf: 0,
+    loaded: false, sp: 0, night: 0, strike: 0, page: 1, total: 7, label: 'Title', wide: true, scrolled: false, foot: 0,
+    picked: [], lastAdded: null, revealed: true, sweep: null, slip: null, act: -1, vh: 900, fp: 0, fT: 0.1, fRun: false, gsPh: 0, fsScale: 1, fSound: 'Rain', hlIdx: 0, cPh: 0, dPh: 0, pdfIn: true, font: 'Caveat', ink: '#1e3a8a', clipped: false, paper: 'Dotted', pdf: 0,
     secs: 24 * 60 + 12, sound: 'Rain'
   };
   demoSound: SoundId | null = null;
   reduced = false; loopId = 0; raf: number | null = null; clock: any; demoT: any; user1 = false; userPdf = false; busy = false;
   onScroll: () => void = () => {};
-  story: HTMLElement | null = null; desk: HTMLElement | null = null; fs: HTMLElement | null = null; focus: HTMLElement | null = null;
-  setStory = (el: HTMLElement | null) => { this.story = el; };
-  setDesk = (el: HTMLElement | null) => { this.desk = el; };
+  fs: HTMLElement | null = null; focus: HTMLElement | null = null;
   setFs = (el: HTMLElement | null) => { this.fs = el; };
   setFocus = (el: HTMLElement | null) => { this.focus = el; };
 
   componentDidMount() {
     this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    if (this.reduced) this.setState({ wfT: 0.995, wfPlay: false });
-    let last = performance.now(), hold = 0;
+    let last = performance.now();
     const loop = (t: number) => {
       this.loopId = requestAnimationFrame(loop);
       // ~30 fps is plenty for these animations and halves the render work.
@@ -56,10 +51,6 @@ class Landing extends Component<object, S> {
       // Keep real time on slow devices; the cap only stops a jump after the tab was in the background.
       const dt = Math.min(250, t - last); last = t;
       const s = this.state, n: S = {};
-      if (s.wfVis && s.wfPlay) {
-        if (s.wfT >= 1) { hold += dt; if (hold > 1800) { hold = 0; n.wfT = 0; } }
-        else n.wfT = Math.min(1, s.wfT + dt / WF_MS);
-      }
       if (s.fRun) { const v = s.fT + dt / 26000; if (v >= 1) { n.fT = 1; n.fRun = false; } else n.fT = v; }
       if (Object.keys(n).length) this.setState(n);
     };
@@ -93,10 +84,6 @@ class Landing extends Component<object, S> {
   update = () => {
     this.raf = null;
     const vh = window.innerHeight, c = (v: number) => Math.max(0, Math.min(1, v)), n: S = {};
-    const st = this.story;
-    if (st) { const r = st.getBoundingClientRect(); n.wfVis = r.top < vh * 0.7 && r.bottom > vh * 0.3; }
-    const dk = this.desk;
-    if (dk && dk.clientWidth) n.scale = Math.max(0.2, Math.min(1.6, dk.clientWidth / 940, dk.clientHeight / 660));
     const fo = this.focus;
     if (fo) { const r = fo.getBoundingClientRect(); n.night = c((vh * 0.9 - r.top) / (vh * 0.5)) * c((r.bottom - vh * 0.1) / (vh * 0.4)); }
     const fs = this.fs;
@@ -164,34 +151,10 @@ class Landing extends Component<object, S> {
   }
 
   renderVals() {
-    const s = this.state, sp = s.wfT;
+    const s = this.state;
     const c = (v: number) => Math.max(0, Math.min(1, v));
-    const seg = (a: number, b: number) => c((sp - a) / (b - a));
     const ease = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-    const hl = seg(0.11, 0.22);
-    const pop = seg(0.22, 0.25) * (1 - seg(0.31, 0.34));
-    const split = ease(seg(0.31, 0.44));
-    const slipIn = seg(0.29, 0.31), fly = ease(seg(0.31, 0.44));
-    const slipOp = slipIn * (1 - seg(0.42, 0.46));
-    const col = ease(seg(0.8, 0.87));
-    const pdfX = lerp(270, 40, split), nbX = lerp(640, 480, split);
-    const clipB = seg(0.57, 0.6) * (1 - seg(0.66, 0.68));
-    const fig = ease(seg(0.6, 0.68));
-    const fan = ease(seg(0.74, 0.78)) * (1 - col);
-    const chip = seg(0.52, 0.56) * (1 - seg(0.79, 0.81));
-    const file = ease(seg(0.84, 0.88)), prog = seg(0.87, 0.95);
-    const R = [[0, 0.1], [0.1, 0.26], [0.26, 0.56], [0.56, 0.78], [0.78, 1]];
-    const active = R.findIndex(([, b]) => sp < b || b === 1);
-    const CAPS = [
-      { n: '01', t: 'Read', d: 'Open one or more PDFs and study in a focused workspace.' },
-      { n: '02', t: 'Highlight', d: 'Select a passage and pick a marker colour. The exact words are captured, nothing paraphrased.' },
-      { n: '03', t: 'Export', d: 'Send it to the board. It lands in your notebook in your handwriting, linked back to its page.' },
-      { n: '04', t: 'Make it yours', d: 'Place it into a notebook and write, draw, organize, and customize your notes.' },
-      { n: '05', t: 'Download', d: 'Export your notebook pages as a PDF whenever you need a copy to print, share or revise from.' }
-    ];
-    const storyText = ['Mitochondria convert the chemical', 'energy in glucose into ATP through', 'cellular respiration, which is why', 'muscle cells contain thousands of them.'];
     const fp = s.fT, fseg = (a: number, b: number) => c((fp - a) / (b - a));
     const enter = ease(fseg(0.2, 0.3)), r1 = fseg(0.34, 0.58), brk = fseg(0.6, 0.68), r2 = fseg(0.68, FOCUS_END);
     const inBreak = isBreak(fp);
@@ -248,31 +211,6 @@ class Landing extends Component<object, S> {
       swoosh: s.loaded ? 0 : 320,
       fadeOp: s.loaded ? 1 : 0, fadeTf: s.loaded ? 'none' : 'translateY(16px)',
 
-      caps: CAPS.map((k, i) => ({ ...k, op: i === active ? 1 : 0, tf: `translateY(${(i - active) * 18}px)` })),
-      wfToggle: () => this.setState((st: any) => ({ wfPlay: !st.wfPlay, wfT: st.wfT >= 1 ? 0 : st.wfT })), wfLabel: s.wfPlay ? 'Pause' : 'Play', wfIcon: s.wfPlay ? '❚❚' : '▶',
-      steps5: CAPS.map((k, i) => ({ w: ((R[i][1] - R[i][0]) * 100).toFixed(0), go: () => this.setState({ wfT: R[i][0] + 0.002, wfPlay: true }), n: k.n, t: k.t, fill: (seg(R[i][0], R[i][1]) * 100).toFixed(1) + '%', c: i === active ? 'var(--color-accent-700)' : i < active ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 50%, transparent)' })),
-      scale: s.scale.toFixed(3), deskH: Math.round(660 * s.scale) + 'px', deskW: Math.round(940 * s.scale) + 'px',
-      deskSaved: sp > 0.44 && sp < 0.52 ? 'Saving…' : 'Saved',
-      splitC: split > 0.5 ? 'var(--color-accent-700)' : 'inherit', splitSh: split > 0.5 ? 'inset 0 0 0 1px var(--color-accent)' : 'none',
-      exBg: sp > 0.27 && sp < 0.31 ? 'var(--color-accent-200)' : 'var(--color-accent-100)', exTf: sp > 0.28 && sp < 0.3 ? 'scale(.94)' : 'none',
-      dlBorder: sp > 0.79 ? 'var(--color-accent)' : 'var(--color-divider)', dlBg: sp > 0.79 ? 'var(--color-accent-100)' : 'transparent', dlC: sp > 0.79 ? 'var(--color-accent-700)' : 'var(--color-text)', dlBtnTf: sp > 0.8 && sp < 0.82 ? 'scale(.94)' : 'none',
-      deskPdfTf: `translate(${pdfX.toFixed(1)}px, ${lerp(10, 0, seg(0, 0.08)).toFixed(1)}px) scale(${lerp(1, 0.92, col).toFixed(3)})`, deskPdfOp: (1 - 0.7 * col).toFixed(3),
-      nbTf: `translateX(${nbX.toFixed(1)}px) rotate(${lerp(3, 0, split).toFixed(2)}deg) scale(${lerp(1, 0.62, col).toFixed(3)})`, nbOp: (split * (1 - 0.6 * col)).toFixed(3),
-      hlSize: `${(hl * 100).toFixed(1)}% 100%`,
-      hlLine: sp > 0.44 ? 'inset 0 -1.5px 0 var(--color-accent)' : 'none',
-      popOp: pop.toFixed(3), popTf: `translateY(${((1 - seg(0.22, 0.25)) * 6).toFixed(1)}px)`,
-      sSlipOp: slipOp.toFixed(3),
-      sSlipTf: `translate(${lerp(310, 560, fly).toFixed(1)}px, ${lerp(262 - (1 - slipIn) * 8, 184, fly).toFixed(1)}px) rotate(${lerp(0, 2, fly).toFixed(2)}deg) scale(${lerp(1, 0.9, fly).toFixed(3)})`,
-      storyLines: storyText.map((t, i) => { const v = seg(0.44 + i * 0.025, 0.47 + i * 0.025); return { t, clip: `inset(-10px ${((1 - v) * 100).toFixed(1)}% -10px 0)` }; }),
-      clipOp: clipB.toFixed(3),
-      figOp: fig.toFixed(3), figTf: `translate(${lerp(-120, 0, fig).toFixed(1)}px, ${lerp(-30, 0, fig).toFixed(1)}px) rotate(${lerp(-4, -1.5, fig).toFixed(2)}deg)`,
-      annClip: `inset(-10px ${((1 - seg(0.66, 0.71)) * 100).toFixed(1)}% -10px 0)`,
-      ann2Clip: `inset(-10px ${((1 - seg(0.71, 0.76)) * 100).toFixed(1)}% -10px 0)`,
-      fan1: `rotate(${(-3 * fan).toFixed(2)}deg) translate(${(-10 * fan).toFixed(1)}px, ${(4 * fan).toFixed(1)}px)`,
-      fan2: `rotate(${(-6.5 * fan).toFixed(2)}deg) translate(${(-22 * fan).toFixed(1)}px, ${(8 * fan).toFixed(1)}px)`,
-      chipOp: chip.toFixed(3), chipTf: `translateY(${((1 - chip) * 6).toFixed(1)}px)`,
-      fileOp: file.toFixed(3), fileTf: `translateY(${((1 - file) * 24).toFixed(1)}px) scale(${lerp(0.96, 1, file).toFixed(3)})`,
-      dlProg: (prog * 100).toFixed(1) + '%', dlStatus: prog >= 1 ? '✓ Saved to Downloads' : 'Preparing your notebook…', dlStatusC: prog >= 1 ? 'var(--color-accent-700)' : 'color-mix(in srgb, var(--color-text) 62%, transparent)',
 
       fColGap: s.fNarrow ? '8px' : '22px', fH2: s.fNarrow ? '26px' : 'clamp(36px,4.2vw,64px)', fGap: s.fNarrow ? '12px 40px' : '28px 56px', fDescDisplay: s.fNarrow ? 'none' : 'block',
       fSteps: FSTEPS.map(([t, d], i) => ({ disp: s.fNarrow && i !== fActive ? 'none' : 'flex', n: '0' + (i + 1), t, d, op: i === fActive ? 1 : 0.45, mh: i === fActive ? '90px' : '0px', bar: i === fActive ? '100%' : '0px' })),
@@ -302,7 +240,7 @@ class Landing extends Component<object, S> {
       setupPe: fp < 0.2 ? 'auto' : 'none', sumPe: fp > 0.86 ? 'auto' : 'none',
       startGlow: fp <= 0.12 ? '0 0 0 4px color-mix(in srgb, var(--color-accent-400) 25%, transparent)' : 'none',
       // The mock's own button is too small to tap once the stage is scaled down for phones.
-      fStartLabel: s.fNarrow && !s.fRun ? (fp >= 1 ? 'Run it again' : 'Start focusing') : null,
+      fStartLabel: !s.wide && !s.fRun ? (fp >= 1 ? 'Run it again' : 'Start focusing') : null,
       fHint: fp <= 0.12 ? '← press Start focusing to run a session' : fp >= 1 ? 'that was 50 minutes, in 26 seconds' : '', fHintOp: fp <= 0.12 || fp >= 1 ? 1 : 0,
       gsPickA: () => { clearTimeout(this.demoT); this.setState({ act: 5 }, () => this.runSeq(5, 'gsPh', GS_SEQ.slice(1, 4).concat([[0, 1200]]))); },
       gsPickB: () => { clearTimeout(this.demoT); this.setState({ act: 5 }, () => this.runSeq(5, 'gsPh', GS_SEQ.slice(4, 7).concat([[0, 1200]]))); },
@@ -382,7 +320,7 @@ class Landing extends Component<object, S> {
   }
 
   render() {
-    return <LandingView v={this.renderVals()} setStory={this.setStory} setDesk={this.setDesk} setFs={this.setFs} setFocus={this.setFocus} />;
+    return <LandingView v={this.renderVals()} setFs={this.setFs} setFocus={this.setFocus} />;
   }
 }
 

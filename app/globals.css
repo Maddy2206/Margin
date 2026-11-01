@@ -305,6 +305,27 @@ html { scroll-behavior: smooth; font-size: clamp(16px, 0.5vw + 8.8px, 22px); }
   .lp-sheet { position: relative !important; top: auto !important; min-height: 0 !important; margin-bottom: 28px !important; }
 }
 
+/* Hero: one column, with the video below the description. The headline takes one line on large screens to leave the video room. */
+.lp-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: clamp(12px, 2vh, 20px); }
+@media (min-width: 960px) {
+  .lp-hero h1 { display: flex; justify-content: center; align-items: baseline; gap: 0.26em; }
+  .lp-hero-line { flex: none; }
+}
+@media (min-width: 641px), (max-height: 700px) { .lp-hero-kicker { display: none !important; } }
+/* Hero marker: sweeps across the word once the headline settles, then stays. Without motion it simply shows highlighted. */
+.lp-marker {
+  padding: 0 3px; border-radius: 2px; color: var(--color-text);
+  background: linear-gradient(var(--color-accent-200), var(--color-accent-200)) no-repeat 0 55% / 100% 82%;
+  animation: lp-marker-sweep 0.9s cubic-bezier(0.45, 0, 0.25, 1) 1.6s backwards;
+}
+@keyframes lp-marker-sweep { from { background-size: 0% 82%; } }
+
+@media (max-width: 640px) {
+  .lp-hero-extra { display: none; }
+  /* Two lines on any phone, leaving room for the video. */
+  .lp-hero h1 { font-size: min(2.375rem, calc((100vw - 56px) / 9)) !important; }
+}
+
 /* The hand-placed demos inside the sheets, adapted for phones. */
 @media (max-width: 959px) { .lp-gutter { display: none !important; } }
 @media (max-width: 640px) {
@@ -313,11 +334,11 @@ html { scroll-behavior: smooth; font-size: clamp(16px, 0.5vw + 8.8px, 22px); }
   .lp-panes > .lp-source-pdf { height: 320px; padding-bottom: 0 !important; }
   .lp-pdf-page { height: auto !important; min-height: 300px; }
 }
-/* The canvas demo is drawn at fixed positions about 400px wide. */
+/* These demos are drawn at fixed positions; the canvas needs about 400px of width. */
 @media (max-width: 500px) { .lp-canvas { zoom: 0.85; } }
 @media (max-width: 430px) { .lp-canvas { zoom: 0.72; } }
 @media (max-width: 375px) { .lp-canvas { zoom: 0.64; } }
-@media (max-width: 340px) { .lp-canvas { zoom: 0.52; } }
+@media (max-width: 340px) { .lp-canvas { zoom: 0.52; } .lp-clip-demo { zoom: 0.8; } }
 
 /* Landing nav on phones: drop the in-page links and tighten spacing so the CTA never overflows. */
 @media (max-width: 640px) {

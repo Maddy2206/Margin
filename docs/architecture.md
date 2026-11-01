@@ -6,7 +6,7 @@ Client-only Next.js (App Router) app: no API routes or server code of its own. D
 
 | Path | Role |
 | --- | --- |
-| `app/page.tsx` | Landing page: `components/landing/Landing.tsx` (timeline, scroll and demo logic, a class component ported from the design file) renders `LandingView.tsx` (markup) |
+| `app/page.tsx` | Landing page: `components/landing/Landing.tsx` (timeline, scroll and demo logic, a class component ported from the design file) renders `LandingView.tsx` (markup); the hero's workflow demo is `WorkflowVideo.tsx`, which keeps its own clock and state so its frames redraw only that stage |
 | `app/login/page.tsx` | Sign-in / create-account screen (`components/login/Login.tsx`) using `lib/auth.ts`: shows real errors, "check your inbox" when email confirmation is on, plays a page-turn transition then routes to `/dashboard`; Google leaves the page and returns to `/dashboard`; "Continue without an account" links to `/dashboard` |
 | `app/reset-password/page.tsx` | New-password form (`components/login/ResetPassword.tsx`) reached from the reset email |
 | `app/dashboard/page.tsx` | Board library (`components/dashboard/`) in the notebook theme; sidebar shows the account (Sign out) or a Sign in link; offers to upload guest boards once signed in |
