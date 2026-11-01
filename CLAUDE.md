@@ -10,11 +10,11 @@
 
 ## Documentation maintenance
 
-Docs: `README.md` (overview, usage, limitations), `docs/architecture.md` (structure, data flow, storage), `FEATURES.md` (gitignored, detailed feature list; recreate from the code if missing), this file (agent rules). `AGENTS.md` is auto-generated; leave it.
+Docs: `README.md` (short overview, setup, top limitations), `docs/guide.md` (full walkthrough, all limitations, deployment), `docs/architecture.md` (structure, data flow, storage), `FEATURES.md` (gitignored, detailed feature list; recreate from the code if missing), this file (agent rules). `AGENTS.md` is auto-generated; leave it.
 
 - Before a substantial change, note which docs it could affect.
 - After a feature, architecture, API, dependency, script or setup/deploy change, decide whether docs need updating and do it in the same task. Update:
-  - `README.md` and `FEATURES.md` when user-facing features, setup, capabilities or structure change;
+  - `README.md`, `docs/guide.md` and `FEATURES.md` when user-facing features, setup, capabilities, limitations or deployment change;
   - `docs/architecture.md` when components, data flow or the storage schema change;
   - `CLAUDE.md` when conventions, workflows or agent instructions change.
 - Scale the effort: small fix = only the affected doc; new feature = README + FEATURES.md; architecture change = also `docs/architecture.md`; dependency/tooling change = verify commands and setup text; release or milestone = a broader consistency audit (parallel read-only subagents are fine here, not for trivial edits).

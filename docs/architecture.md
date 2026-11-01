@@ -61,5 +61,5 @@ IndexedDB `pdf-note-taker`, version 3. Stores: `boards`, `highlights` (indexed b
 
 - Environment variables read: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (optional; both empty means guest-only, template in `.env.example`; they are inlined into the browser bundle by design), and `NEXT_DIST_DIR` (build output folder, default `.next`, see `next.config.ts`).
 - Tailwind is wired through a Turbopack CSS rule in `next.config.ts` (no PostCSS config); a non-Turbopack build is untested.
-- `package.json` requires Node >=22 (`engines`; Next 16 needs >=20.9 and `@supabase/supabase-js` is dropping Node 20). On Railway set `NEXT_TELEMETRY_DISABLED=1` so Serverless sleeping works (see the README Deploy section).
-- No tests, CI or deployment config files exist in the repo (both the Vercel and Railway deploys in the README use the platform's auto-detected build).
+- `package.json` requires Node >=22 (`engines`; Next 16 needs >=20.9 and `@supabase/supabase-js` is dropping Node 20). On Railway set `NEXT_TELEMETRY_DISABLED=1` so Serverless sleeping works (see [the guide](guide.md#deploy)).
+- No tests, CI or deployment config files exist in the repo (both the Vercel and Railway deploys in [the guide](guide.md#deploy) use the platform's auto-detected build).
