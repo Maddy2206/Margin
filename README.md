@@ -2,7 +2,7 @@
 
 **A study desk for PDFs.** Highlight a passage and it lands in a handwritten notebook beside the page, in the exact words and linked to its source. Nothing is summarised or rewritten by AI. The thinking stays yours.
 
-[![Watch the 22-second demo of Margin](docs/media/margin-demo-poster.jpg)](docs/media/margin-demo.mp4)
+[![Margin demo: a highlight becomes handwritten notes linked to the PDF](docs/media/margin-demo.gif)](https://margin-notes.up.railway.app)
 
 **[Try it live](https://margin-notes.up.railway.app)** with no account needed. The server sleeps when idle, so the first load can be slow; refresh if you get an error.
 
