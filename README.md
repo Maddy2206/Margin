@@ -2,7 +2,7 @@
 
 Read a PDF on one side and build handwritten-style, editable notes on the other. Highlight text in the PDF and it appears in your notes in a handwriting font and the color you picked. Clip diagrams from the PDF into the notes, draw or write your own, and download the notes as a PDF.
 
-Everything is saved in your browser (IndexedDB). There is no server, login or API key.
+Everything is saved in your browser (IndexedDB). There is no server or API key. The `/login` page is a UI stub (`lib/auth.ts`, no real accounts yet): any valid-looking email and a 6+ character password opens the dashboard.
 
 ## Run it
 
@@ -37,13 +37,13 @@ Boards live in the browser you created them in, so a deployed copy starts empty 
 - **Exported PDFs are images** of the notes (not selectable or searchable text).
 - Focus sounds are generated in the browser (no downloads). Binaural beats only work with headphones, and after a reload sound restarts once you click **Back to focus**. Their effect on focus varies between people.
 - Focus mode can't block OS notifications or stop Esc/Alt+Tab (turn on Do Not Disturb yourself); it records leaving instead. Pages "visited" are pages scrolled into view, not proof of reading.
-- No mobile layout, accounts or collaboration. Diagrams clipped before the source-link feature have no source to jump to.
+- No mobile layout for the workspace, real accounts or collaboration (the landing, login and dashboard pages are responsive). Diagrams clipped before the source-link feature have no source to jump to.
 
 ## Project structure
 
 ```
-app/          routes: / (landing), /dashboard, /board/[id] (workspace)
-components/   pdf/ (viewer), notes/ (Excalidraw canvas), focus/ (focus mode), dashboard/, landing/, ui/, workspace/
+app/          routes: / (landing), /login (stub sign-in), /dashboard, /board/[id] (workspace)
+components/   pdf/ (viewer), notes/ (Excalidraw canvas), focus/ (focus mode), dashboard/, landing/, login/, ui/, workspace/
 lib/          storage.ts (IndexedDB), export-pdf.ts, note-image.ts, paper.ts, placement.ts, ...
 public/       sample.pdf
 ```

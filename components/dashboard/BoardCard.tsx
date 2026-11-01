@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Board } from "@/lib/types";
-import { PAPERS, paperColorOf } from "@/lib/paper";
+import { paperColorOf, paperCss } from "@/lib/paper";
 
 function timeAgo(ts: number) {
   const mins = Math.round((Date.now() - ts) / 60000);
@@ -28,6 +28,7 @@ export default function BoardCard({
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [hover, setHover] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -65,15 +66,19 @@ export default function BoardCard({
   }, [menu]);
 
   const menuItem =
-    "block w-full px-2.5 py-2 text-left text-[13px] hover:bg-[var(--color-surface)]";
+    "block w-full px-2.5 py-2 text-left text-[13.5px] hover:bg-[color-mix(in_srgb,var(--color-text)_6%,transparent)]";
+  const docs = board.docCount ?? 1;
+  const color = paperColorOf(board.paper, board.paperColor);
+  const lined = board.paper === "lined";
+  const ease = "transform .5s cubic-bezier(.2,.75,.15,1)";
+  const under = (bg: string, transform: string): React.CSSProperties => ({
+    position: "absolute", inset: "16px 14px 0 14px", background: bg, boxShadow: "var(--shadow-sm)", transform, transition: ease,
+  });
 
   return (
-    <div
-      className="card relative flex flex-col outline-2 -outline-offset-2 outline-transparent transition hover:shadow-[var(--shadow-md)] hover:outline-[var(--color-text)]"
-      style={{ padding: 0, gap: 0, background: "var(--color-surface)" }}
-    >
+    <div className="relative flex flex-col gap-3.5">
       {editing ? (
-        <div className="p-3.5">
+        <div className="flex flex-col gap-2">
           <input
             ref={inputRef}
             value={draft}
@@ -89,8 +94,8 @@ export default function BoardCard({
             }}
             className="input"
           />
-          {error && <p className="mt-1 text-sm text-red-700">{error}</p>}
-          <div className="mt-2 flex gap-2">
+          {error && <p className="m-0 text-sm text-[var(--pen-red)]">{error}</p>}
+          <div className="flex gap-2">
             <button onClick={commit} className="btn btn-primary">
               Save
             </button>
@@ -104,88 +109,94 @@ export default function BoardCard({
           <Link
             href={`/board/${board.id}`}
             aria-label={`Open ${board.name}`}
-            className="block"
+            className="relative block h-[220px] !text-inherit no-underline"
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+            onFocus={() => setHover(true)}
+            onBlur={() => setHover(false)}
           >
-            <div
-              className="dot-grid relative overflow-hidden border-b-2 border-[var(--color-divider)]"
-              style={{ aspectRatio: "16 / 10", backgroundSize: "14px 14px" }}
-            >
-              <div className="absolute inset-x-[26%] bottom-0 top-8 p-3 shadow-[var(--shadow-md)]"
-                style={{ background: paperColorOf(board.paper, board.paperColor) }}>
-                <span className="mb-1.5 block h-1.5 w-3/5 bg-[#605d5d]" />
-                {[100, 100, 70, 100, 85].map((w, i) => (
-                  <span
-                    key={i}
-                    className="mb-1.5 block h-0.5 bg-[#bab6b6]"
-                    style={{ width: `${w}%` }}
-                  />
-                ))}
-              </div>
-              <span className="tag tag-neutral absolute left-2.5 top-2.5 !px-2 !py-0.5 !text-[10px]">
-                {PAPERS.find((x) => x.id === board.paper)?.label} notes
-              </span>
-            </div>
-            <div className="flex flex-col gap-1.5 px-3.5 pb-3.5 pt-3">
-              <div className="card-kicker" style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-accent-700)" }}>
-                {`${board.docCount ?? 1} ${(board.docCount ?? 1) === 1 ? "PDF" : "PDFs"}`}
-              </div>
-              <div className="truncate pr-8 text-[17px] font-extrabold leading-tight">
-                {board.name}
-              </div>
-              <div className="text-[11px] text-[color-mix(in_srgb,var(--color-text)_50%,transparent)]">
-                Last opened {timeAgo(board.lastOpenedAt)}
-              </div>
-            </div>
-          </Link>
-          <span className="absolute bottom-11 right-1.5" onClick={(e) => e.stopPropagation()}>
-            <button
-              className="btn btn-icon"
-              style={{ width: 30, height: 30 }}
-              aria-label="Board actions"
-              aria-haspopup="menu"
-              aria-expanded={menu}
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenu((m) => !m);
+            {docs >= 3 && <span style={under("#efece5", hover ? "rotate(-5deg) translate(-12px, 2px)" : "rotate(-2.4deg) translate(-5px, 3px)")} />}
+            {docs >= 2 && <span style={under("#f5f2ec", hover ? "rotate(3.5deg) translate(10px, -2px)" : "rotate(1.6deg) translate(4px, 2px)")} />}
+            <span
+              className="absolute flex flex-col overflow-hidden"
+              style={{
+                inset: "16px 14px 0 14px",
+                ...paperCss(board.paper, color, 28),
+                boxShadow: hover ? "var(--shadow-lg)" : "var(--shadow-md)",
+                transform: hover ? "translateY(-6px) rotate(-0.6deg)" : "none",
+                transition: `${ease}, box-shadow .5s`,
+                padding: `22px 18px 0 ${lined ? 50 : 20}px`,
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="5" cy="12" r="1.6" />
-                <circle cx="12" cy="12" r="1.6" />
-                <circle cx="19" cy="12" r="1.6" />
-              </svg>
-            </button>
-            {menu && (
-              <div
-                role="menu"
-                className="absolute right-0 top-9 z-20 flex w-44 flex-col border border-[var(--color-divider)] bg-white p-1 text-black shadow-[var(--shadow-md)]"
+              {lined && <span className="absolute inset-y-0 left-9 w-[1.5px] bg-[var(--margin-red)]" />}
+              <span className="line-clamp-2 font-[family-name:var(--font-caveat)] text-[25px] font-medium leading-7 text-[#2d2b2b]">
+                {board.name}
+              </span>
+            </span>
+            <span
+              className="absolute left-7 top-[-1px] rounded-t-[var(--radius-md)] border border-b-0 border-[var(--color-divider)] px-2.5 pb-1 pt-[3px] text-[10.5px] tracking-[0.04em] tabular-nums text-[var(--color-neutral-800)]"
+              style={{ background: color, transform: hover ? "translateY(-6px) rotate(-0.6deg)" : "none", transition: ease }}
+            >
+              {docs} {docs === 1 ? "PDF" : "PDFs"}
+            </span>
+          </Link>
+          <div className="flex items-start gap-2">
+            <Link href={`/board/${board.id}`} className="flex min-w-0 flex-1 flex-col gap-[3px] !text-inherit no-underline">
+              <span className="truncate font-[family-name:var(--font-heading)] text-[21px] font-semibold leading-[1.15]">{board.name}</span>
+              <span className="text-[12.5px] text-[color-mix(in_srgb,var(--color-text)_66%,transparent)]">
+                {board.paper[0].toUpperCase() + board.paper.slice(1)} notebook · opened {timeAgo(board.lastOpenedAt)}
+              </span>
+            </Link>
+            <span className="relative flex-none" onClick={(e) => e.stopPropagation()}>
+              <button
+                className="btn btn-icon"
+                style={{ width: 30, height: 30 }}
+                aria-label="Board actions"
+                aria-haspopup="menu"
+                aria-expanded={menu}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenu((m) => !m);
+                }}
               >
-                <Link role="menuitem" href={`/board/${board.id}`} className={menuItem}>
-                  Open
-                </Link>
-                <button
-                  role="menuitem"
-                  className={menuItem}
-                  onClick={() => {
-                    setMenu(false);
-                    startEdit();
-                  }}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="5" cy="12" r="1.6" />
+                  <circle cx="12" cy="12" r="1.6" />
+                  <circle cx="19" cy="12" r="1.6" />
+                </svg>
+              </button>
+              {menu && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-9 z-20 flex w-44 flex-col rounded-[var(--radius-md)] border border-[var(--color-divider)] bg-[var(--color-bg)] p-1 shadow-[var(--shadow-md)]"
                 >
-                  Rename
-                </button>
-                <button
-                  role="menuitem"
-                  className={`${menuItem} border-t border-[var(--color-divider)] !text-[var(--color-accent-700)] hover:!bg-[var(--color-accent-100)]`}
-                  onClick={() => {
-                    setMenu(false);
-                    setConfirming(true);
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            )}
-          </span>
+                  <Link role="menuitem" href={`/board/${board.id}`} className={`${menuItem} !text-[var(--color-text)] no-underline`}>
+                    Open
+                  </Link>
+                  <button
+                    role="menuitem"
+                    className={menuItem}
+                    onClick={() => {
+                      setMenu(false);
+                      startEdit();
+                    }}
+                  >
+                    Rename
+                  </button>
+                  <button
+                    role="menuitem"
+                    className={`${menuItem} border-t border-[var(--color-divider)] !text-[var(--color-accent-700)] hover:!bg-[var(--color-accent-100)]`}
+                    onClick={() => {
+                      setMenu(false);
+                      setConfirming(true);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </span>
+          </div>
         </>
       )}
 
@@ -194,30 +205,20 @@ export default function BoardCard({
           role="dialog"
           aria-modal="true"
           aria-label="Delete board"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="dialog-backdrop z-50"
           onKeyDown={(e) => e.key === "Escape" && !busy && setConfirming(false)}
         >
-          <div className="w-full max-w-sm rounded-xl bg-white p-5 text-black shadow-xl">
-            <h2 className="mb-2 text-lg font-semibold">Delete this board?</h2>
-            <p className="mb-4 text-sm">
-              &ldquo;{board.name}&rdquo; with all its PDFs, notes and highlights will be deleted. This
-              can&apos;t be undone.
-            </p>
-            <div className="flex justify-end gap-2 text-sm">
-              <button
-                autoFocus
-                disabled={busy}
-                onClick={() => setConfirming(false)}
-                className="rounded-md border border-zinc-300 px-3 py-1.5"
-              >
+          <div className="dialog" style={{ background: "var(--color-bg)" }}>
+            <div className="dialog-title" style={{ fontSize: 24 }}>Delete this board?</div>
+            <div className="dialog-body">
+              &ldquo;{board.name}&rdquo; with all its PDFs, notes and highlights will be deleted. This can&apos;t be undone.
+            </div>
+            <div className="dialog-actions">
+              <button autoFocus disabled={busy} onClick={() => setConfirming(false)} className="btn btn-secondary">
                 Cancel
               </button>
-              <button
-                disabled={busy}
-                onClick={confirmDelete}
-                className="rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700 disabled:opacity-60"
-              >
-                {busy ? "Deleting..." : "Delete"}
+              <button disabled={busy} onClick={confirmDelete} className="btn btn-primary">
+                {busy ? "Deleting..." : "Delete board"}
               </button>
             </div>
           </div>

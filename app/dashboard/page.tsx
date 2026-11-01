@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { formatToday } from "@/lib/today";
 import { deleteBoard, listBoards, listFocusSessions, updateBoard } from "@/lib/storage";
 import type { Board, FocusSession } from "@/lib/types";
 import FocusStats from "@/components/dashboard/FocusStats";
@@ -29,14 +30,20 @@ export default function DashboardPage() {
   const [statsNow, setStatsNow] = useState(0);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("recent");
+  const [today, setToday] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const stamp = formatToday;
     listBoards()
-      .then(setBoards)
+      .then((l) => {
+        setBoards(l);
+        setToday(stamp());
+      })
       .catch(() => {
         setStorageError(true);
         setBoards([]);
+        setToday(stamp());
       });
     listFocusSessions()
       .then((l) => {
@@ -82,55 +89,69 @@ export default function DashboardPage() {
   }
 
   const hasBoards = (boards?.length ?? 0) > 0;
+  const label = "text-[11px] uppercase tracking-[0.1em] text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]";
 
   return (
-    <div className="flex min-h-screen flex-1 bg-[var(--color-bg)]">
-      <aside className="sticky top-0 hidden h-screen w-62 flex-none flex-col border-r-2 border-[var(--color-divider)] md:flex" style={{ width: 248 }}>
-        <Link href="/" className="flex h-14 flex-none items-center gap-2.5 border-b-2 border-[var(--color-divider)] px-[18px]">
-          <span className="h-3 w-3 bg-[var(--color-accent)]" />
-          <span className="text-lg font-extrabold tracking-tight">Margin</span>
+    <div className="nb nb-page flex flex-wrap">
+      <aside
+        className="relative z-[5] flex w-full flex-none flex-col gap-[30px] border-b border-r-0 border-[var(--color-divider)] bg-[var(--paper)] px-[22px] py-6 md:sticky md:top-0 md:h-screen md:w-[248px] md:border-b-0 md:border-r-[6px] md:border-double md:border-r-[var(--margin-red)]"
+      >
+        <Link href="/" className="font-[family-name:var(--font-heading)] text-[26px] font-semibold tracking-[-0.01em] !text-[var(--color-text)] no-underline">
+          Margin
         </Link>
-        <div className="px-3.5 pb-2 pt-3.5">
-          <button onClick={() => setCreating(true)} className="btn btn-primary w-full !justify-start gap-2" style={{ height: 38 }}>
-            <PlusIcon />
-            New board
-          </button>
-        </div>
-        <nav aria-label="Library" className="flex flex-col gap-px px-2 py-1">
-          <div className="px-2.5 pb-1.5 pt-3 text-[11px] uppercase tracking-[0.08em] text-[color-mix(in_srgb,var(--color-text)_70%,transparent)]">
-            Library
-          </div>
-          <div className="flex items-center gap-2.5 bg-[color-mix(in_srgb,var(--color-text)_7%,transparent)] px-2.5 py-2 text-sm">
-            <span className="h-2 w-2 bg-[var(--color-accent)]" />
-            <span className="flex-1 font-semibold">All boards</span>
-            <span className="text-xs tabular-nums text-[color-mix(in_srgb,var(--color-text)_65%,transparent)]">
-              {boards?.length ?? 0}
-            </span>
-          </div>
+        <button onClick={() => setCreating(true)} className="btn btn-primary !h-10 !justify-start gap-2 !text-[15px]">
+          <PlusIcon />
+          New board
+        </button>
+        <nav aria-label="Library" className="flex flex-col gap-1">
+          <span className={`${label} px-2.5 pb-1.5`}>Library</span>
+          <span className="flex items-center justify-between rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)] px-2.5 py-2 text-sm">
+            <span>All boards</span>
+            <span className="text-xs tabular-nums text-[var(--color-accent-700)]">{boards?.length ?? 0}</span>
+          </span>
         </nav>
-        <div className="mt-auto flex flex-col gap-px border-t-2 border-[var(--color-divider)] p-2">
-          <Link href="/" className="flex items-center gap-2.5 px-2.5 py-2 text-sm hover:bg-[color-mix(in_srgb,var(--color-text)_7%,transparent)]">
+        <FocusStats sessions={sessions} now={statsNow} />
+        <div
+          aria-hidden="true"
+          className="mt-auto flex -rotate-3 items-center gap-2.5 px-2.5 font-[family-name:var(--font-caveat)] text-[19px] leading-[1.05] text-[var(--pen-red)]"
+        >
+          <svg width="28" height="28" viewBox="0 0 34 34" fill="none" stroke="#e0a526" className="flex-none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 3 L21 13 L32 13 L23 20 L27 31 L17 24 L7 31 L11 20 L2 13 L13 13 Z" />
+          </svg>
+          <span>
+            finals in 3 weeks.
+            <br />
+            don&rsquo;t panic.
+          </span>
+        </div>
+        <div className="flex flex-col gap-2 px-2.5 text-[12.5px] leading-normal text-[color-mix(in_srgb,var(--color-text)_66%,transparent)]">
+          <span>Boards are saved in this browser.</span>
+          <Link href="/" className="no-underline">
             About Margin
           </Link>
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 overflow-auto">
-        <div className="flex h-14 items-center gap-2.5 border-b-2 border-[var(--color-divider)] px-4 md:hidden">
-          <span className="h-3 w-3 bg-[var(--color-accent)]" />
-          <span className="text-[17px] font-extrabold">Margin</span>
-          <button onClick={() => setCreating(true)} className="btn btn-primary ml-auto whitespace-nowrap">
-            New board
-          </button>
-        </div>
-        <div className="px-[clamp(16px,4vw,40px)] pb-[72px] pt-7">
-          <div className="flex flex-wrap items-end gap-x-4 gap-y-3.5 border-b-2 border-[var(--color-divider)] pb-[18px]">
-            <div className="mr-auto min-w-0">
-              <div className="mb-2 text-xs uppercase tracking-[0.08em] text-[var(--color-accent-700)]">Library</div>
-              <h1 className="m-0 text-[34px] leading-none tracking-tight">All boards</h1>
-            </div>
-            <div className="relative w-[min(320px,100%)]">
-              <svg className="pointer-events-none absolute left-2.5 top-2.5 opacity-70" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <main className="relative min-w-0 flex-[1_1_560px] px-[clamp(20px,4vw,64px)] pb-24 pt-[clamp(28px,4vw,56px)]">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-[clamp(8px,1.6vw,24px)] w-0.5 bg-[var(--margin-red)]" />
+        <header className="flex flex-wrap items-end gap-x-7 gap-y-5 pb-7">
+          <div className="mr-auto flex flex-col gap-1.5">
+            <span className="min-h-[1.2em] font-[family-name:var(--font-caveat)] text-[22px] text-[var(--pen-blue)]">{today}</span>
+            <h1 className="relative m-0 font-[family-name:var(--font-heading)] text-[clamp(40px,4.6vw,64px)] font-normal leading-none tracking-[-0.015em]">
+              Your desk
+              <span
+                aria-hidden="true"
+                className="absolute left-[calc(100%+18px)] top-1.5 hidden -rotate-5 whitespace-nowrap font-[family-name:var(--font-caveat)] text-xl leading-[1.05] tracking-normal text-[var(--pen-red)] sm:block"
+              >
+                &larr; all my
+                <br />
+                subjects!!
+              </span>
+            </h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative w-[min(300px,100%)]">
+              <svg className="pointer-events-none absolute left-[11px] top-[11px] opacity-60" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <circle cx="11" cy="11" r="7" />
                 <path d="m20 20-3.5-3.5" />
               </svg>
@@ -141,9 +162,9 @@ export default function DashboardPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search boards"
                 aria-label="Search boards"
-                style={{ paddingLeft: 34, paddingRight: 34 }}
+                style={{ paddingLeft: 34, paddingRight: 34, height: 38 }}
               />
-              <span className="pointer-events-none absolute right-2 top-2 border border-[var(--color-divider)] px-1.5 py-px text-[11px] text-[color-mix(in_srgb,var(--color-text)_65%,transparent)]">
+              <span className="pointer-events-none absolute right-[9px] top-[9px] rounded-[var(--radius-sm)] border border-[var(--color-divider)] px-1.5 text-[11px] leading-[18px] text-[color-mix(in_srgb,var(--color-text)_60%,transparent)]">
                 /
               </span>
             </div>
@@ -155,56 +176,115 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
+        </header>
+        <div className="mb-9 h-0.5 bg-[var(--rule-strong)]" />
 
-          {storageError && (
-            <p role="alert" className="mt-4 bg-[var(--color-accent-100)] px-3 py-2 text-sm text-[var(--color-accent-800)]">
-              Couldn&apos;t open browser storage, so your boards can&apos;t be loaded or saved. Check that
-              storage isn&apos;t blocked (for example in a private window) and reload.
+        {storageError && (
+          <p role="alert" className="mb-6 bg-[var(--color-accent-100)] px-3 py-2 text-sm text-[var(--color-accent-800)]">
+            Couldn&apos;t open browser storage, so your boards can&apos;t be loaded or saved. Check that
+            storage isn&apos;t blocked (for example in a private window) and reload.
+          </p>
+        )}
+
+        {boards !== null && !hasBoards && <EmptyDesk onCreate={() => setCreating(true)} />}
+
+        {(boards === null || hasBoards) && (
+        <section aria-labelledby="boards">
+          <div className="mb-[26px] flex items-baseline gap-3">
+            <h2 id="boards" className="m-0 font-[family-name:var(--font-body)] text-xs font-normal uppercase tracking-[0.1em]">
+              {query ? "Results" : sort === "recent" ? "Recently opened" : sort === "name" ? "A to Z" : "Newest first"}
+            </h2>
+            <span className="text-xs tabular-nums text-[color-mix(in_srgb,var(--color-text)_62%,transparent)]">
+              {shown.length} {shown.length === 1 ? "board" : "boards"}
+            </span>
+          </div>
+          {boards === null ? (
+            <p>Loading...</p>
+          ) : (
+            <div className="grid gap-x-9 gap-y-12" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(min(260px,100%),1fr))" }}>
+              {!query && (
+                <button onClick={() => setCreating(true)} className="flex flex-col gap-3.5 border-0 bg-transparent p-0 text-left text-inherit">
+                  <span className="grid h-[220px] w-full place-items-center rounded-[var(--radius-sm)] border-[1.5px] border-dashed border-[color-mix(in_srgb,var(--color-accent)_70%,transparent)] transition hover:border-[var(--color-accent)] hover:bg-[color-mix(in_srgb,var(--color-accent)_8%,transparent)]">
+                    <span className="flex flex-col items-center gap-1.5 font-[family-name:var(--font-caveat)] text-[30px] text-[var(--color-accent-700)]">
+                      <span className="text-[44px] leading-[0.8]">+</span>
+                      new board
+                    </span>
+                  </span>
+                  <span className="flex flex-col gap-[3px]">
+                    <span className="font-[family-name:var(--font-heading)] text-[21px] font-semibold leading-[1.15]">Start a board</span>
+                    <span className="text-[12.5px] text-[color-mix(in_srgb,var(--color-text)_66%,transparent)]">Upload one or more PDFs</span>
+                  </span>
+                </button>
+              )}
+              {shown.map((b) => (
+                <BoardCard key={b.id} board={b} onRename={rename} onDelete={remove} />
+              ))}
+            </div>
+          )}
+          {boards !== null && query && shown.length === 0 && (
+            <p className="mt-3 font-[family-name:var(--font-caveat)] text-2xl text-[color-mix(in_srgb,var(--color-text)_60%,transparent)]">
+              No boards match &ldquo;{query}&rdquo;.
             </p>
           )}
-
-          <FocusStats sessions={sessions} now={statsNow} />
-
-          <section aria-labelledby="boards" className="pt-8">
-            <div className="mb-3 flex items-baseline gap-3">
-              <h2 id="boards" className="m-0 text-xs font-semibold uppercase tracking-[0.08em]">
-                {query ? "Results" : sort === "recent" ? "Recently opened" : "Boards"}
-              </h2>
-              <span className="text-xs text-[color-mix(in_srgb,var(--color-text)_65%,transparent)]">
-                {shown.length} {shown.length === 1 ? "board" : "boards"}
-              </span>
-            </div>
-            {boards === null ? (
-              <p className="text-[var(--color-neutral-600,#7d7979)]">Loading...</p>
-            ) : (
-              <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(min(340px,100%),1fr))" }}>
-                {!query && (
-                  <button
-                    onClick={() => setCreating(true)}
-                    className="flex min-h-[250px] flex-col items-start justify-end gap-2 border-2 border-dashed border-[var(--color-divider)] p-4 text-left transition hover:border-[var(--color-accent)] hover:bg-[var(--color-accent-100)]"
-                  >
-                    <span className="grid h-9 w-9 place-items-center bg-[var(--color-accent)] text-[var(--color-bg)]">
-                      <PlusIcon />
-                    </span>
-                    <span className="text-[17px] font-extrabold">New board</span>
-                    <span className="text-[13px] text-[color-mix(in_srgb,var(--color-text)_72%,transparent)]">
-                      {hasBoards ? "Upload another PDF and start a notebook" : "Upload a PDF to start your first notebook"}
-                    </span>
-                  </button>
-                )}
-                {shown.map((b) => (
-                  <BoardCard key={b.id} board={b} onRename={rename} onDelete={remove} />
-                ))}
-              </div>
-            )}
-            {boards !== null && query && shown.length === 0 && (
-              <p className="mt-6 text-sm">No boards match &ldquo;{query}&rdquo;.</p>
-            )}
-          </section>
-        </div>
+        </section>
+        )}
       </main>
 
       {creating && <CreateBoardDialog onClose={() => setCreating(false)} />}
     </div>
+  );
+}
+
+/** Shown when the library is empty: a PDF page turning into a handwritten notebook page. */
+function EmptyDesk({ onCreate }: { onCreate: () => void }) {
+  const ruled = "repeating-linear-gradient(to bottom,transparent 0 27px,color-mix(in srgb,var(--color-text) 12%,transparent) 27px 28px)";
+  const hand = "flex h-7 items-end pb-[3px] font-[family-name:var(--font-caveat)] text-[21px] leading-none";
+  return (
+    <section className="flex flex-wrap items-center gap-x-[72px] gap-y-14 pb-12 pt-6">
+      <div className="flex max-w-[460px] flex-[1_1_320px] flex-col gap-5">
+        <span className="text-xs uppercase tracking-[0.1em] text-[var(--color-accent-700)]">Your first board</span>
+        <h2 className="m-0 font-[family-name:var(--font-heading)] text-[clamp(34px,3.6vw,50px)] font-normal leading-[1.04]">
+          A board is one subject on one desk.
+        </h2>
+        <p className="m-0 text-base leading-[1.7] text-[color-mix(in_srgb,var(--color-text)_78%,transparent)]">
+          Put the PDFs for a course or topic in a board. Read them on the left, highlight what matters, and it lands in the notebook on the right in your handwriting.
+        </p>
+        <div className="mt-1.5">
+          <button onClick={onCreate} className="btn btn-primary !h-11 !px-5 !text-base">
+            Create your first board
+          </button>
+        </div>
+      </div>
+      <div aria-hidden="true" className="relative hidden h-[380px] max-w-[620px] flex-[1_1_420px] min-[900px]:block">
+        <div className="absolute left-0 top-5 flex h-80 w-[52%] -rotate-2 flex-col gap-2 bg-[var(--color-neutral-100)] px-6 py-[22px] shadow-[var(--shadow-md)]">
+          <div className="mb-1.5 border-b border-[var(--color-neutral-300)] pb-1.5 text-[9px] uppercase tracking-[0.08em] text-[var(--color-neutral-700)]">Your PDF · p. 1</div>
+          {[100, 92, 97].map((w) => (
+            <div key={w} className="h-[5px] bg-[var(--color-neutral-300)]" style={{ width: `${w}%` }} />
+          ))}
+          {[100, 68].map((w) => (
+            <div key={w} className="-my-[3px] h-[11px] bg-[var(--color-accent-200)] shadow-[inset_0_-1.5px_0_var(--color-accent)]" style={{ width: `${w}%` }} />
+          ))}
+          {[88, 100, 60].map((w) => (
+            <div key={w} className="h-[5px] bg-[var(--color-neutral-300)]" style={{ width: `${w}%` }} />
+          ))}
+        </div>
+        <svg viewBox="0 0 120 60" className="absolute left-[43%] top-24 z-[2] h-[60px] w-[120px] overflow-visible" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 40 C 40 4, 80 4, 112 26" />
+          <path d="M100 16 L113 27 L98 33" />
+        </svg>
+        <div
+          className="absolute right-0 top-11 h-80 w-[52%] rotate-[1.5deg] bg-[#fffdf8] pl-[46px] pr-[18px] pt-7 shadow-[var(--shadow-lg)]"
+          style={{ backgroundImage: ruled }}
+        >
+          <div className="absolute inset-y-0 left-[34px] w-[1.5px] bg-[var(--margin-red)]" />
+          <div className={`${hand} !text-[25px] font-medium text-[#2d2b2b]`}>Your notebook</div>
+          <div className="h-7" />
+          <div className={`${hand} text-[#1e3a8a]`}>the passage you highlighted,</div>
+          <div className={`${hand} text-[#1e3a8a]`}>word for word, in your hand</div>
+          <div className="h-7" />
+          <div className={`${hand} text-[var(--color-accent-700)]`}>+ your own arrows &amp; sketches</div>
+        </div>
+      </div>
+    </section>
   );
 }

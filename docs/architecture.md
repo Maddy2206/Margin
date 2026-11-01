@@ -6,14 +6,19 @@ Client-only Next.js (App Router) app. There is no backend, API or authentication
 
 | Path | Role |
 | --- | --- |
-| `app/page.tsx` | Landing page (`components/landing/Landing.tsx`) |
-| `app/dashboard/page.tsx` | Board library (`components/dashboard/`) |
+| `app/page.tsx` | Landing page: `components/landing/Landing.tsx` (timeline, scroll and demo logic, a class component ported from the design file) renders `LandingView.tsx` (markup) |
+| `app/login/page.tsx` | Sign-in / create-account screen (`components/login/Login.tsx`); calls the stub in `lib/auth.ts`, plays a page-turn transition, then routes to `/dashboard` |
+| `app/dashboard/page.tsx` | Board library (`components/dashboard/`) in the notebook theme |
 | `app/board/[id]/page.tsx` | Workspace: owns state and wires the PDF and notes sides together |
 | `components/pdf/` | `PdfViewer` (pdf.js rendering, highlights), `PdfTabs`, `SelectionPopout`, `DiagramSelect` |
 | `components/notes/` | `NotesCanvas` (Excalidraw wrapper, autosave), toolbar, inline editor, paper background, helpers |
 | `components/workspace/SplitLayout.tsx` | Resizable PDF/notes split |
 | `components/focus/` | Focus mode: `useFocusSession` (state, saving, fullscreen, absence detection, chime), `useAmbientSound` (focus sound choice + playback tied to the session), `SoundPicker`, `SoundMenu`, `FocusSetupDialog`, `FocusBar`, `FocusOverlay`, `HoldToExit`, `useNow` |
-| `lib/` | `storage.ts` (IndexedDB), `types.ts`, `export-pdf.ts`, `note-image.ts`, `diagram-region.ts`, `paper.ts`, `pages.ts`, `placement.ts`, `handwriting-fonts.ts`, `pdf-validate.ts`, `visible-page.ts`, `note-source.ts`, `focus.ts` (pure session/timer/stats logic), `ambient.ts` (Web Audio focus-sound engine and saved choice) |
+| `lib/` | `storage.ts` (IndexedDB), `types.ts`, `export-pdf.ts`, `note-image.ts`, `diagram-region.ts`, `paper.ts`, `pages.ts`, `placement.ts`, `handwriting-fonts.ts`, `pdf-validate.ts`, `visible-page.ts`, `note-source.ts`, `focus.ts` (pure session/timer/stats logic), `ambient.ts` (Web Audio focus-sound engine and saved choice), `auth.ts` (local sign-in stub, no server), `inline-style.ts` (`css`/`hov`/`foc` helpers that turn the design files' inline style strings into React props), `today.ts` |
+
+## Notebook theme
+
+The landing, login and dashboard pages share a ruled-paper "notebook" look. Paper tokens (`--paper`, `--rule`, `--margin-red`, `--pen-blue`, ...) are on `:root` in `app/globals.css`; the gold palette, Cormorant Garamond/Lora type and button/input overrides apply only inside a `.nb` wrapper, so the workspace keeps its own red modernist styling. `.nb-page` adds the ruled background. Fonts (Cormorant Garamond, Lora, Caveat, Kalam, Patrick Hand) are loaded in `app/layout.tsx` via `next/font`. The landing and login pages come from design files (`Margin Landing v2`, `Margin Login`); their margin lines draw in on load and are skipped under `prefers-reduced-motion`.
 
 ## Data flow
 

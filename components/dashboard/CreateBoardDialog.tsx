@@ -47,23 +47,22 @@ export default function CreateBoardDialog({ onClose }: { onClose: () => void }) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="dialog-backdrop z-50 overflow-auto"
       onClick={onClose}
     >
       <form
         onSubmit={submit}
         onClick={(e) => e.stopPropagation()}
-        style={{ background: "#ffffff", color: "#000000" }}
-        className="max-h-[94vh] w-full max-w-2xl space-y-5 overflow-y-auto border border-zinc-300 p-8 shadow-xl"
+        className="max-h-[94vh] w-full max-w-2xl space-y-5 overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--color-divider)] bg-[var(--color-bg)] p-8 shadow-[var(--shadow-lg)]"
       >
-        <h2 className="text-2xl font-extrabold">Create board</h2>
+        <h2 className="m-0 font-[family-name:var(--font-heading)] text-[34px] font-normal leading-none">New board</h2>
         <label className="block text-sm">
           <span className="mb-1 block text-zinc-600">Board name</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Organic Chemistry, ch. 3"
-            className="w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2"
+            className="input"
           />
         </label>
         <div className="text-sm">
@@ -83,7 +82,7 @@ export default function CreateBoardDialog({ onClose }: { onClose: () => void }) 
           }}
         />
         {error && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="border-l-2 border-[var(--color-accent)] bg-[var(--color-accent-100)] px-3 py-2 text-[13px] text-[var(--color-accent-800)]">
             {error}
           </p>
         )}
@@ -91,14 +90,14 @@ export default function CreateBoardDialog({ onClose }: { onClose: () => void }) 
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-3 py-2 text-sm hover:bg-zinc-100"
+            className="btn btn-secondary"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={files.length === 0 || !name.trim() || busy}
-            className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="btn btn-primary"
           >
             {busy ? "Creating..." : "Create board"}
           </button>

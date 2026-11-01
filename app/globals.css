@@ -196,3 +196,98 @@ html { scroll-behavior: smooth; }
   to { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { .source-chip { animation: none; transition: none; } }
+
+/* ── Notebook theme: landing, login and dashboard ─────────────────────────────
+   Shared paper tokens live on :root; the classical (gold) palette and the
+   Cormorant/Lora type are scoped to `.nb` so the workspace keeps its own look. */
+:root {
+  --paper: #fdfcf7;
+  --rule: #c3d6ee;
+  --rule-strong: #5f8fd6;
+  --margin-red: #e2575f;
+  --pen-blue: #2456c9;
+  --pen-red: #d84a52;
+  --pencil: #5b6b8c;
+  --ink: #1b2847;
+  --marker: #fff38a;
+  --gutter: max(12px, calc(8vw - 20px));
+  --page-pad: calc(var(--gutter) + clamp(16px, 3vw, 44px));
+}
+
+.nb {
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-text: #201f1d;
+  --color-accent: #b68235;
+  --color-divider: color-mix(in srgb, #201f1d 16%, transparent);
+  --color-neutral-100: #f8f4f4;
+  --color-neutral-200: #eae7e7;
+  --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6;
+  --color-neutral-500: #9b9797;
+  --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d;
+  --color-neutral-800: #444141;
+  --color-neutral-900: #2d2b2b;
+  --color-accent-100: #fff3e4;
+  --color-accent-200: #ffe3bf;
+  --color-accent-300: #facb8d;
+  --color-accent-400: #e1ad66;
+  --color-accent-500: #c28d41;
+  --color-accent-600: #a06f24;
+  --color-accent-700: #7d5411;
+  --color-accent-800: #5a3b0a;
+  --color-accent-900: #3a270d;
+  --font-heading: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-body: var(--font-lora), Lora, Georgia, serif;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 7px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-text);
+  text-wrap: pretty;
+}
+
+/* Ruled paper behind a whole notebook page. `clip` (not `hidden`) keeps position:sticky working. */
+.nb-page {
+  min-height: 100vh;
+  overflow-x: clip;
+  background-color: var(--paper);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--rule) 31px 32px);
+}
+
+.nb h1, .nb h2, .nb h3, .nb h4 { font-family: var(--font-heading); font-weight: 600; letter-spacing: -0.015em; line-height: 1.12; }
+.nb a { color: var(--color-accent-700); text-underline-offset: 3px; }
+.nb :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.nb ::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
+
+.nb .btn {
+  font-family: var(--font-heading); font-weight: 600; font-size: 14px; border-radius: var(--radius-md);
+  padding: 9.2px 16.5px; background: transparent; color: var(--color-text);
+}
+.nb .btn-primary { background: transparent; color: var(--color-accent); border-color: var(--color-accent); }
+.nb .btn-primary:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
+.nb .btn-primary:active { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
+.nb .btn-secondary { border-color: var(--color-divider); }
+.nb .btn-icon { width: 36px; height: 36px; padding: 0; }
+.nb .btn-block { width: 100%; margin-top: 9.2px; }
+.nb .input { border-radius: var(--radius-md); background: transparent; font-family: var(--font-body); }
+.nb .input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.nb .seg { border-radius: var(--radius-md); }
+.nb .seg-opt[aria-pressed="true"] { background: transparent; color: var(--color-accent-700); box-shadow: inset 0 0 0 1px var(--color-accent); }
+.nb .dialog-backdrop { position: fixed; inset: 0; display: grid; place-items: center; padding: 18px; background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent); }
+.nb .dialog { width: min(440px, 100%); display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-lg); border: 1px solid var(--color-divider); }
+.nb .dialog-title { font-family: var(--font-heading); font-weight: 600; font-size: 20px; }
+.nb .dialog-body { font-size: 14px; opacity: 0.85; }
+.nb .dialog-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 9px; }
+
+@keyframes eq { 0% { transform: scaleY(0.25); } 100% { transform: scaleY(1); } }
+@keyframes mg-left { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes mg-right { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+@keyframes blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+.nb input::placeholder { color: #9aa6bf; }
+
+/* Margin doodles sit in the page gutters, which are too narrow on small screens. */
+@media (max-width: 959px) { .nb-doodle { display: none; } }

@@ -1,523 +1,361 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { Fragment, useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import Link from "next/link";
+// Logic ported from the "Margin Landing v2" design file: a 30 s workflow timeline, six sticky feature sheets with
+// auto-playing demos, the scroll-linked night transition and a 26 s simulated focus session. The markup lives in LandingView.
+import { Component } from "react";
+import LandingView from "./LandingView";
 
-/** Turns a CSS declaration string into a React style object. */
-function css(s: string): CSSProperties {
-  const out: Record<string, string> = {};
-  for (const decl of s.split(";")) {
-    const i = decl.indexOf(":");
-    if (i < 0) continue;
-    const key = decl.slice(0, i).trim();
-    out[key.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())] = decl.slice(i + 1).trim();
+type S = Record<string, any>;
+
+const QUOTES = [
+  ['I stopped keeping a second window open for notes. Every quote still knows which page it came from.', 'Priya, second-year biology', 'card', -1.6],
+  ['Clipping diagrams straight into my notes got rid of a screenshots folder I never opened again.', 'Daniel, mechanical engineering', 'hand', 1.2],
+  ['Focus mode with rain on and a page target is how I got through organic chemistry this term.', 'Amara, pre-med', 'card', -0.6],
+  ['Nothing gets summarised for me. I still do the thinking; it just takes fewer steps to write it down.', 'Jonas, philosophy', 'hand', 1.8],
+  ['Case readings run forty pages. Highlighting straight into my outline saves me an hour a week.', 'Mei, law', 'hand', -1.2],
+  ['I pick one handwriting per course. Revising from notes in the same hand makes them feel like mine.', 'Tomás, history', 'card', 1],
+  ['Go to source is the feature I didn’t know I needed until exam week.', 'Sara, computer science', 'hand', -1.8],
+  ['Two PDFs and one notebook on one screen. That’s the whole idea, and it works.', 'Kwame, economics', 'card', 0.8]
+];
+const GS_SEQ = [[0, 900], [1, 1000], [2, 450], [3, 2400], [4, 1000], [5, 450], [6, 2600]];
+const card = ([text, who, kind, rot]: any[]) => kind === 'card'
+  ? { text, who, bg: '#fbf9f6', img: 'repeating-linear-gradient(to bottom, transparent 0 27px, color-mix(in srgb, #201f1d 10%, transparent) 27px 28px)', top: '2px solid var(--color-accent)', family: 'var(--font-body)', size: '15px', lh: '28px', ink: 'var(--color-text)', tape: 0, tf: 'rotate(' + rot + 'deg)' }
+  : { text, who, bg: 'var(--color-accent-100)', img: 'none', top: '0', family: "var(--font-caveat), cursive", size: '25px', lh: '1.25', ink: '#1e3a8a', tape: 1, tf: 'rotate(' + rot + 'deg)' };
+
+class Landing extends Component<object, S> {
+  state: S = {
+    loaded: false, sp: 0, night: 0, strike: 0, scale: 1, page: 1, total: 7, label: 'Title', wide: true, scrolled: false, foot: 0,
+    picked: [], lastAdded: null, revealed: true, sweep: null, slip: null, act: -1, vh: 900, fp: 0, wfT: 0, wfPlay: true, wfVis: false, fT: 0.1, fRun: false, gsPh: 0, fsScale: 1, fSound: 'Rain', hlIdx: 0, cPh: 0, dPh: 0, pdfIn: true, font: 'Caveat', ink: '#1e3a8a', clipped: false, paper: 'Dotted', pdf: 0,
+    secs: 24 * 60 + 12, sound: 'Rain'
+  };
+  reduced = false; loopId = 0; raf: number | null = null; clock: any; demoT: any; user1 = false; userPdf = false; busy = false;
+  onScroll: () => void = () => {};
+  story: HTMLElement | null = null; desk: HTMLElement | null = null; fs: HTMLElement | null = null; focus: HTMLElement | null = null;
+  setStory = (el: HTMLElement | null) => { this.story = el; };
+  setDesk = (el: HTMLElement | null) => { this.desk = el; };
+  setFs = (el: HTMLElement | null) => { this.fs = el; };
+  setFocus = (el: HTMLElement | null) => { this.focus = el; };
+
+  componentDidMount() {
+    this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (this.reduced) this.setState({ wfT: 0.995, wfPlay: false });
+    let last = performance.now(), hold = 0;
+    const loop = (t: number) => {
+      const dt = Math.min(64, t - last); last = t;
+      const s = this.state, n: S = {};
+      if (s.wfVis && s.wfPlay) {
+        if (s.wfT >= 1) { hold += dt; if (hold > 2600) { hold = 0; n.wfT = 0; } }
+        else n.wfT = Math.min(1, s.wfT + dt / 30000);
+      }
+      if (s.fRun) { const v = s.fT + dt / 26000; if (v >= 1) { n.fT = 1; n.fRun = false; } else n.fT = v; }
+      if (Object.keys(n).length) this.setState(n);
+      this.loopId = requestAnimationFrame(loop);
+    };
+    this.loopId = requestAnimationFrame(loop);
+    requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ loaded: true })));
+    setTimeout(() => { if (!this.state.loaded) this.setState({ loaded: true }); }, 80);
+    this.onScroll = () => { if (!this.raf) this.raf = requestAnimationFrame(this.update); };
+    window.addEventListener('scroll', this.onScroll, { passive: true, capture: true });
+    window.addEventListener('resize', this.onScroll);
+    this.update();
+    this.clock = setInterval(() => this.setState((s: any) => ({ secs: s.secs > 0 ? s.secs - 1 : 1500 })), 1000);
   }
-  return out as CSSProperties;
+  componentWillUnmount() {
+    window.removeEventListener('scroll', this.onScroll, { capture: true });
+    window.removeEventListener('resize', this.onScroll);
+    cancelAnimationFrame(this.raf ?? 0); cancelAnimationFrame(this.loopId); clearInterval(this.clock);
+  }
+  update = () => {
+    this.raf = null;
+    const vh = window.innerHeight, c = (v: number) => Math.max(0, Math.min(1, v)), n: S = {};
+    const st = this.story;
+    if (st) { const r = st.getBoundingClientRect(); n.wfVis = r.top < vh * 0.7 && r.bottom > vh * 0.3; }
+    const dk = this.desk;
+    if (dk && dk.clientWidth) n.scale = Math.max(0.3, Math.min(1.6, dk.clientWidth / 940, dk.clientHeight / 660));
+    const fo = this.focus;
+    if (fo) { const r = fo.getBoundingClientRect(); n.night = c((vh * 0.9 - r.top) / (vh * 0.5)) * c((r.bottom - vh * 0.1) / (vh * 0.4)); }
+    const fs = this.fs;
+    if (fs && fs.clientWidth) { const avail = fs.offsetTop > 80 ? (vh - 64 - fs.offsetTop - 22) : (vh - 64 - 44); n.fsScale = Math.max(0.3, Math.min(1.25, fs.clientWidth / 880, avail / 560)); n.fNarrow = fs.offsetTop > 80; }
+    const pages = Array.from(document.querySelectorAll('[data-page]'));
+    let idx = 0;
+    pages.forEach((el, i) => { if (el.getBoundingClientRect().top < vh * 0.45) idx = i; });
+    n.page = idx + 1; n.total = pages.length || 7; n.label = pages[idx] ? (pages[idx] as HTMLElement).dataset.page : '';
+    n.wide = window.innerWidth >= 960;
+    n.vh = vh;
+    const se = document.scrollingElement || document.documentElement;
+    n.scrolled = se.scrollTop > 8;
+    n.foot = c((se.scrollTop + vh - (se.scrollHeight - vh * 0.8)) / (vh * 0.8));
+    let act = -1;
+    document.querySelectorAll('[data-sheet]').forEach((el, i) => { const r = el.getBoundingClientRect(); if (r.top < vh * 0.6 && r.bottom > 140) act = i; });
+    n.act = act;
+    const prevAct = this.state.act;
+    this.setState(n, () => { if (act !== prevAct) this.startDemo(act); });
+  };
+
+  later(ms: number, fn: () => void) { clearTimeout(this.demoT); this.demoT = setTimeout(fn, ms); }
+  startDemo(k: number) {
+    clearTimeout(this.demoT);
+    if (this.reduced) { this.setState({ cPh: 5, dPh: 7, picked: this.state.picked.length ? this.state.picked : [0, 1] }); return; }
+    if (k === 0 && !this.user1) { this.setState({ picked: [] }); this.later(700, () => this.auto1()); }
+    if (k === 1) this.runSeq(1, 'cPh', [[0, 500], [1, 500], [2, 1300], [3, 800], [4, 1100], [5, 3400]]);
+    if (k === 2) this.runSeq(2, 'dPh', [[0, 400], [1, 700], [2, 600], [3, 700], [4, 600], [5, 800], [6, 800], [7, 3600]]);
+    if (k === 3 && !this.userPdf) this.later(2600, () => this.autoPdf());
+    if (k === 4) this.runSeq(4, 'hlIdx', [0, 1, 2, 3, 4, 5].map((i: any) => [i, 2300]));
+    if (k === 5) this.runSeq(5, 'gsPh', GS_SEQ);
+  }
+  runSeq(sheet: number, key: string, seq: any[][]) {
+    let k = 0;
+    const step = () => { if (this.state.act !== sheet) return; const [ph, ms] = seq[k]; this.setState({ [key]: ph }); k = (k + 1) % seq.length; this.later(ms, step); };
+    step();
+  }
+  auto1() {
+    if (this.state.act !== 0 || this.user1) return;
+    const next = [0, 1, 2, 3].find((i: any) => !this.state.picked.includes(i));
+    if (next === undefined) { this.later(2600, () => { this.setState({ picked: [] }); this.later(900, () => this.auto1()); }); return; }
+    this.transfer(next);
+    this.later(3100, () => this.auto1());
+  }
+  autoPdf() {
+    if (this.state.act !== 3 || this.userPdf) return;
+    this.switchPdf((this.state.pdf + 1) % 3);
+    this.later(2800, () => this.autoPdf());
+  }
+  switchPdf(i: number) { this.setState({ pdf: i, pdfIn: false }, () => requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ pdfIn: true })))); }
+  transfer(i: number) {
+    if (this.busy) return; this.busy = true;
+    this.setState({ sweep: i });
+    setTimeout(() => this.setState({ slip: { i, ph: 'show' } }), 700);
+    setTimeout(() => this.setState({ slip: { i, ph: 'fly' } }), 900);
+    setTimeout(() => this.setState((st: any) => ({ picked: st.picked.includes(i) ? st.picked : [...st.picked, i], lastAdded: i, revealed: false }), () => requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ revealed: true })))), 1350);
+    setTimeout(() => { this.setState({ slip: null, sweep: null }); this.busy = false; }, 1900);
+  }
+  toggle(i: number) {
+    this.user1 = true;
+    if (this.state.picked.includes(i)) this.setState((st: any) => ({ picked: st.picked.filter((x: any) => x !== i) }));
+    else this.transfer(i);
+  }
+
+  renderVals() {
+    const s = this.state, sp = s.wfT;
+    const c = (v: number) => Math.max(0, Math.min(1, v));
+    const seg = (a: number, b: number) => c((sp - a) / (b - a));
+    const ease = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+    const hl = seg(0.11, 0.22);
+    const pop = seg(0.22, 0.25) * (1 - seg(0.31, 0.34));
+    const split = ease(seg(0.31, 0.44));
+    const slipIn = seg(0.29, 0.31), fly = ease(seg(0.31, 0.44));
+    const slipOp = slipIn * (1 - seg(0.42, 0.46));
+    const col = ease(seg(0.8, 0.87));
+    const pdfX = lerp(270, 40, split), nbX = lerp(640, 480, split);
+    const clipB = seg(0.57, 0.6) * (1 - seg(0.66, 0.68));
+    const fig = ease(seg(0.6, 0.68));
+    const fan = ease(seg(0.74, 0.78)) * (1 - col);
+    const chip = seg(0.52, 0.56) * (1 - seg(0.79, 0.81));
+    const file = ease(seg(0.84, 0.88)), prog = seg(0.87, 0.95);
+    const R = [[0, 0.1], [0.1, 0.26], [0.26, 0.56], [0.56, 0.78], [0.78, 1]];
+    const active = R.findIndex(([, b]) => sp < b || b === 1);
+    const CAPS = [
+      { n: '01', t: 'Read', d: 'Open one or more PDFs and study in a focused workspace.' },
+      { n: '02', t: 'Highlight', d: 'Select a passage and pick a marker colour. The exact words are captured, nothing paraphrased.' },
+      { n: '03', t: 'Export', d: 'Send it to the board. It lands in your notebook in your handwriting, linked back to its page.' },
+      { n: '04', t: 'Make it yours', d: 'Place it into a notebook and write, draw, organize, and customize your notes.' },
+      { n: '05', t: 'Download', d: 'Export your notebook pages as a PDF whenever you need a copy to print, share or revise from.' }
+    ];
+    const storyText = ['Mitochondria convert the chemical', 'energy in glucose into ATP through', 'cellular respiration, which is why', 'muscle cells contain thousands of them.'];
+    const fp = s.fT, fseg = (a: number, b: number) => c((fp - a) / (b - a));
+    const enter = ease(fseg(0.2, 0.3)), r1 = fseg(0.34, 0.58), brk = fseg(0.6, 0.68), r2 = fseg(0.68, 0.78);
+    const inBreak = fp >= 0.59 && fp < 0.68;
+    const secsLeft = fp < 0.59 ? 1500 * (1 - r1) : inBreak ? 300 * (1 - brk) : 1500 * (1 - r2);
+    const fT = Math.round(secsLeft), ringP = fp < 0.59 ? r1 : inBreak ? brk : r2;
+    const fPages = Math.round(1 + 11 * fseg(0.34, 0.78));
+    const fActive = fp < 0.22 ? 0 : fp < 0.36 ? 1 : fp < 0.79 ? 2 : 3;
+    const FSTEPS = [
+      ['Set the session', 'Pick a timer, a goal and the pages you want to cover. Add rain or a coffee shop if it helps.'],
+      ['The room goes quiet', 'The header shrinks to a slim countdown and everything else steps back.'],
+      ['Keep your place', 'Rounds and breaks run on their own. Pages you visit and highlights you export are counted as you go.'],
+      ['See what you did', 'A summary waits at the end, and your streak carries over to the dashboard.']
+    ];
+    const HLS = [
+      ['Mitochondria convert glucose into ATP', ' through cellular respiration.', 'glucose → ATP', '#fde68a'],
+      ['The inner membrane is folded into cristae', ', increasing its surface area.', 'cristae = more surface', '#a7f3d0'],
+      ['Muscle cells contain thousands of mitochondria', '; skin cells far fewer.', 'muscle cells: 1000s', '#fde68a'],
+      ['Mitochondria carry their own circular DNA', ', separate from the nucleus.', 'own DNA, circular', '#bae6fd'],
+      ['It is inherited almost entirely from the mother', '.', 'maternal line only', '#fbcfe8'],
+      ['Chloroplasts capture light energy', ' and build glucose from CO₂ and water.', 'chloroplast: light → glucose', '#a7f3d0']
+    ];
+
+    const fontDefs: Record<string, any> = { Caveat: { f: "var(--font-caveat), cursive", sz: 26, ui: '19px' }, Kalam: { f: "var(--font-kalam), cursive", sz: 19, ui: '14px' }, 'Patrick Hand': { f: "var(--font-patrick), cursive", sz: 22, ui: '16px' } };
+    const sentences = [
+      'Mitochondria convert the chemical energy in glucose into ATP through cellular respiration.',
+      'The inner membrane is folded into cristae, which increase the surface area for the electron transport chain.',
+      'Muscle cells can contain thousands of mitochondria; skin cells contain far fewer.',
+      'Mitochondria carry their own circular DNA, inherited almost entirely from the mother.'
+    ];
+    const inks = [{ n: 'Graphite', c: '#2d2b2b' }, { n: 'Navy', c: '#1e3a8a' }, { n: 'Brown', c: '#78350f' }, { n: 'Crimson', c: '#9f1239' }];
+    const rule = 'color-mix(in srgb, var(--color-text) 10%, transparent)';
+    const PAPER: Record<string, string[]> = {
+      Lined: [`repeating-linear-gradient(to bottom, transparent 0 33px, ${rule} 33px 34px)`, 'auto'],
+      Dotted: ['radial-gradient(circle, var(--color-neutral-400) 1.1px, transparent 1.5px)', '22px 22px'],
+      Grid: [`linear-gradient(${rule} 1px, transparent 1px), linear-gradient(90deg, ${rule} 1px, transparent 1px)`, '24px 24px'],
+      Blank: ['none', 'auto']
+    };
+    const PDFS = [
+      { name: 'Ch4 The cell.pdf', run: 'Chapter 4 · The cell', page: '87', title: '4.2 Energy and the mitochondrion', body: 'Every living cell needs a steady supply of energy to build proteins, move molecules across its membranes and divide. Mitochondria convert the chemical energy in glucose into ATP through cellular respiration.' },
+      { name: 'Lecture 4 slides.pdf', run: 'BIO 101 · Lecture 4', page: '12', title: 'Cellular respiration, in three stages', body: 'Glycolysis in the cytoplasm, the Krebs cycle in the matrix, and oxidative phosphorylation along the inner membrane. Know where each stage happens and what it produces.' },
+      { name: 'Lab 2 handout.pdf', run: 'Lab 2 · Yeast respiration', page: '2', title: 'Measuring CO₂ output', body: 'Record the gas volume in each tube every five minutes for thirty minutes. Compare the glucose and sucrose tubes against the water control and note the temperature.' }
+    ];
+    const pd = PDFS[s.pdf];
+    const mm = Math.floor(s.secs / 60), ss = s.secs % 60;
+    const night = s.night;
+    const SOUNDS = ['Rain', 'Coffee shop', 'Ocean', 'Brown noise', 'Lo-fi', 'Binaural'];
+
+    return {
+            wideOp: s.wide ? 1 : 0,
+      page: s.page, total: s.total, label: s.label,
+      navLine: s.scrolled ? 'var(--color-divider)' : 'transparent',
+      lineTf: s.loaded ? 'translateY(0)' : 'translateY(105%)',
+      wordClip: s.loaded ? 'inset(-20% -10% -40% -5%)' : 'inset(-20% 100% -40% -5%)',
+      swoosh: s.loaded ? 0 : 320,
+      fadeOp: s.loaded ? 1 : 0, fadeTf: s.loaded ? 'none' : 'translateY(16px)',
+
+      caps: CAPS.map((k, i) => ({ ...k, op: i === active ? 1 : 0, tf: `translateY(${(i - active) * 18}px)` })),
+      wfToggle: () => this.setState((st: any) => ({ wfPlay: !st.wfPlay, wfT: st.wfT >= 1 ? 0 : st.wfT })), wfLabel: s.wfPlay ? 'Pause' : 'Play', wfIcon: s.wfPlay ? '❚❚' : '▶',
+      wfTime: '0:' + String(Math.floor(sp * 30)).padStart(2, '0') + ' / 0:30',
+      steps5: CAPS.map((k, i) => ({ w: ((R[i][1] - R[i][0]) * 100).toFixed(0), go: () => this.setState({ wfT: R[i][0] + 0.002, wfPlay: true }), n: k.n, t: k.t, fill: (seg(R[i][0], R[i][1]) * 100).toFixed(1) + '%', c: i === active ? 'var(--color-accent-700)' : i < active ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 50%, transparent)' })),
+      scale: s.scale.toFixed(3), deskH: Math.round(660 * s.scale) + 'px', deskW: Math.round(940 * s.scale) + 'px',
+      deskSaved: sp > 0.44 && sp < 0.52 ? 'Saving…' : 'Saved',
+      splitC: split > 0.5 ? 'var(--color-accent-700)' : 'inherit', splitSh: split > 0.5 ? 'inset 0 0 0 1px var(--color-accent)' : 'none',
+      exBg: sp > 0.27 && sp < 0.31 ? 'var(--color-accent-200)' : 'var(--color-accent-100)', exTf: sp > 0.28 && sp < 0.3 ? 'scale(.94)' : 'none',
+      dlBorder: sp > 0.79 ? 'var(--color-accent)' : 'var(--color-divider)', dlBg: sp > 0.79 ? 'var(--color-accent-100)' : 'transparent', dlC: sp > 0.79 ? 'var(--color-accent-700)' : 'var(--color-text)', dlBtnTf: sp > 0.8 && sp < 0.82 ? 'scale(.94)' : 'none',
+      deskPdfTf: `translate(${pdfX.toFixed(1)}px, ${lerp(10, 0, seg(0, 0.08)).toFixed(1)}px) scale(${lerp(1, 0.92, col).toFixed(3)})`, deskPdfOp: (1 - 0.7 * col).toFixed(3),
+      nbTf: `translateX(${nbX.toFixed(1)}px) rotate(${lerp(3, 0, split).toFixed(2)}deg) scale(${lerp(1, 0.62, col).toFixed(3)})`, nbOp: (split * (1 - 0.6 * col)).toFixed(3),
+      hlSize: `${(hl * 100).toFixed(1)}% 100%`,
+      hlLine: sp > 0.44 ? 'inset 0 -1.5px 0 var(--color-accent)' : 'none',
+      popOp: pop.toFixed(3), popTf: `translateY(${((1 - seg(0.22, 0.25)) * 6).toFixed(1)}px)`,
+      sSlipOp: slipOp.toFixed(3),
+      sSlipTf: `translate(${lerp(310, 560, fly).toFixed(1)}px, ${lerp(262 - (1 - slipIn) * 8, 184, fly).toFixed(1)}px) rotate(${lerp(0, 2, fly).toFixed(2)}deg) scale(${lerp(1, 0.9, fly).toFixed(3)})`,
+      storyLines: storyText.map((t, i) => { const v = seg(0.44 + i * 0.025, 0.47 + i * 0.025); return { t, clip: `inset(-10px ${((1 - v) * 100).toFixed(1)}% -10px 0)` }; }),
+      clipOp: clipB.toFixed(3),
+      figOp: fig.toFixed(3), figTf: `translate(${lerp(-120, 0, fig).toFixed(1)}px, ${lerp(-30, 0, fig).toFixed(1)}px) rotate(${lerp(-4, -1.5, fig).toFixed(2)}deg)`,
+      annClip: `inset(-10px ${((1 - seg(0.66, 0.71)) * 100).toFixed(1)}% -10px 0)`,
+      ann2Clip: `inset(-10px ${((1 - seg(0.71, 0.76)) * 100).toFixed(1)}% -10px 0)`,
+      fan1: `rotate(${(-3 * fan).toFixed(2)}deg) translate(${(-10 * fan).toFixed(1)}px, ${(4 * fan).toFixed(1)}px)`,
+      fan2: `rotate(${(-6.5 * fan).toFixed(2)}deg) translate(${(-22 * fan).toFixed(1)}px, ${(8 * fan).toFixed(1)}px)`,
+      chipOp: chip.toFixed(3), chipTf: `translateY(${((1 - chip) * 6).toFixed(1)}px)`,
+      fileOp: file.toFixed(3), fileTf: `translateY(${((1 - file) * 24).toFixed(1)}px) scale(${lerp(0.96, 1, file).toFixed(3)})`,
+      dlProg: (prog * 100).toFixed(1) + '%', dlStatus: prog >= 1 ? '✓ Saved to Downloads' : 'Preparing your notebook…', dlStatusC: prog >= 1 ? 'var(--color-accent-700)' : 'color-mix(in srgb, var(--color-text) 62%, transparent)',
+
+      fColGap: s.fNarrow ? '8px' : '22px', fH2: s.fNarrow ? '26px' : 'clamp(36px,4.2vw,64px)', fGap: s.fNarrow ? '12px 40px' : '28px 56px', fDescDisplay: s.fNarrow ? 'none' : 'block',
+      fSteps: FSTEPS.map(([t, d], i) => ({ disp: s.fNarrow && i !== fActive ? 'none' : 'flex', n: '0' + (i + 1), t, d, op: i === fActive ? 1 : 0.45, mh: i === fActive ? '90px' : '0px', bar: i === fActive ? '100%' : '0px' })),
+      fsW: Math.round(880 * s.fsScale) + 'px', fsH: Math.round(560 * s.fsScale) + 'px', fsScale: s.fsScale.toFixed(3),
+      fBtnBorder: fp > 0.12 && fp < 0.22 ? 'var(--color-accent)' : 'var(--color-divider)', fBtnC: fp > 0.12 && fp < 0.22 ? 'var(--color-accent-700)' : 'inherit', fBtnBg: fp > 0.12 && fp < 0.22 ? 'var(--color-accent-100)' : 'transparent',
+      fNote3: `inset(-6px ${((1 - fseg(0.5, 0.56)) * 100).toFixed(1)}% -6px 0)`,
+      dimOp: (enter * 0.6).toFixed(3),
+      barOp: enter.toFixed(3), barTf: `translateY(${((1 - enter) * -100).toFixed(1)}%)`,
+      fRoundTxt: inBreak ? 'Break' : `Round ${fp < 0.68 ? 1 : 2}/2`, fTime: `${String(Math.floor(fT / 60)).padStart(2, '0')}:${String(fT % 60).padStart(2, '0')}`,
+      fPhaseTxt: inBreak ? 'Break' : 'Focus', fPagesTxt: `${fPages}/12 pages`, fPagesN: fPages, fHl: Math.round(9 * fseg(0.34, 0.78)),
+      fSoundName: s.fSound || 'Sound off',
+      panelOp: fseg(0.28, 0.34).toFixed(3), panelTf: `translateX(${((1 - fseg(0.28, 0.34)) * 24).toFixed(1)}px)`,
+      ringOff: (415 * (1 - ringP)).toFixed(1),
+      seg1: (r1 * 100).toFixed(1) + '%', seg2: (brk * 100).toFixed(1) + '%', seg3: (r2 * 100).toFixed(1) + '%',
+      fPageTicks: Array.from({ length: 12 }, (_, i) => ({ f: i < fPages ? 'var(--color-accent-400)' : 'transparent', b: i < fPages ? 'var(--color-accent-400)' : 'rgba(255,255,255,.25)' })),
+      fSounds: ['Rain', 'Coffee shop', 'Ocean', 'Lo-fi'].map((name: any) => { const on = s.fSound === name; return { name, border: on ? 'var(--color-accent-400)' : 'rgba(255,255,255,.2)', c: on ? 'var(--color-accent-300)' : 'rgba(255,255,255,.8)', eqOp: on ? (inBreak ? 0.35 : 1) : 0, play: on && !inBreak ? 'running' : 'paused', pick: () => this.setState({ fSound: on ? null : name }) }; }),
+      breakOp: (fseg(0.59, 0.61) * (1 - fseg(0.67, 0.69))).toFixed(3),
+      setupOp: (1 - fseg(0.2, 0.26)).toFixed(3), setupTf: `translateY(${(-12 * fseg(0.2, 0.26)).toFixed(1)}px) scale(${(1 - 0.04 * fseg(0.2, 0.26)).toFixed(3)})`,
+      sheetPos: s.vh >= 700 ? 'sticky' : 'relative',
+      sheetH0: s.vh >= 700 ? 'min(700px, calc(100vh - 100px))' : '600px',
+      sheetH1: s.vh >= 700 ? 'min(700px, calc(100vh - 124px))' : '600px',
+      sheetH2: s.vh >= 700 ? 'min(700px, calc(100vh - 148px))' : '600px',
+      sheetH3: s.vh >= 700 ? 'min(700px, calc(100vh - 172px))' : '600px',
+      sheetH4: s.vh >= 700 ? 'min(700px, calc(100vh - 196px))' : '600px',
+      sheetH5: s.vh >= 700 ? 'min(700px, calc(100vh - 220px))' : '600px',
+      startFocusDemo: () => this.setState({ fT: 0.13, fRun: true }),
+      setupPe: fp < 0.2 ? 'auto' : 'none', sumPe: fp > 0.86 ? 'auto' : 'none',
+      startGlow: fp <= 0.12 ? '0 0 0 4px color-mix(in srgb, var(--color-accent-400) 25%, transparent)' : 'none',
+      fHint: fp <= 0.12 ? '← press Start focusing to run a session' : fp >= 1 ? 'that was 50 minutes, in 26 seconds' : '', fHintOp: fp <= 0.12 || fp >= 1 ? 1 : 0,
+      gsPickA: () => { clearTimeout(this.demoT); this.setState({ act: 5 }, () => this.runSeq(5, 'gsPh', GS_SEQ.slice(1, 4).concat([[0, 1200]]))); },
+      gsPickB: () => { clearTimeout(this.demoT); this.setState({ act: 5 }, () => this.runSeq(5, 'gsPh', GS_SEQ.slice(4, 7).concat([[0, 1200]]))); },
+      gsRingA: s.gsPh >= 1 && s.gsPh <= 3 ? '1.5px solid var(--color-accent)' : '1.5px solid transparent',
+      gsRingB: s.gsPh >= 4 && s.gsPh <= 6 ? '1.5px solid var(--color-accent)' : '1.5px solid transparent',
+      gsChipA: s.gsPh === 1 || s.gsPh === 2 ? 1 : 0, gsChipTfA: s.gsPh === 2 ? 'scale(.93)' : s.gsPh === 1 ? 'none' : 'translateY(6px)', gsChipBgA: s.gsPh === 2 ? 'var(--color-accent-100)' : 'var(--color-bg)',
+      gsChipB: s.gsPh === 4 || s.gsPh === 5 ? 1 : 0, gsChipTfB: s.gsPh === 5 ? 'scale(.93)' : s.gsPh === 4 ? 'none' : 'translateY(6px)', gsChipBgB: s.gsPh === 5 ? 'var(--color-accent-100)' : 'var(--color-bg)',
+      gsY: s.gsPh === 3 || s.gsPh === 4 || s.gsPh === 5 ? '-262px' : s.gsPh === 6 ? '-372px' : '0px',
+      gsPage: s.gsPh >= 3 ? 87 : 86,
+      gsFlashA: s.gsPh === 3 ? '2px solid var(--color-accent-800)' : '2px solid transparent', gsGlowA: s.gsPh === 3 ? '0 0 0 6px color-mix(in srgb, var(--color-accent) 22%, transparent)' : 'none',
+      gsFlashB: s.gsPh === 6 ? '2px solid var(--color-accent-800)' : '2px solid transparent', gsGlowB: s.gsPh === 6 ? '0 0 0 6px color-mix(in srgb, var(--color-accent) 22%, transparent)' : 'none',
+      startBg: fp > 0.15 && fp < 0.21 ? 'color-mix(in srgb, var(--color-accent-400) 22%, transparent)' : 'transparent', startTf: fp > 0.16 && fp < 0.19 ? 'scale(.95)' : 'none',
+      sumOp: fseg(0.8, 0.86).toFixed(3), sumTf: `translateY(${((1 - fseg(0.8, 0.86)) * 22).toFixed(1)}px)`,
+
+      hlList: HLS.map(([t, rest, note, color], i) => ({ t, rest, note, color, ring: i === s.hlIdx ? '2px solid var(--color-accent-800)' : '2px solid transparent', noteBg: i === s.hlIdx ? 'var(--color-accent-100)' : 'transparent', noteRing: i === s.hlIdx ? 'inset 2px 0 0 var(--color-accent)' : 'none', check: i < s.hlIdx ? 1 : 0 })),
+      hlRest: s.wide ? 'inline' : 'none', hlLabel: `${s.hlIdx + 1} of ${HLS.length}`, hlBar: (((s.hlIdx + 1) / HLS.length) * 100).toFixed(1) + '%',
+      hlPrev: () => { clearTimeout(this.demoT); this.setState((st: any) => ({ hlIdx: (st.hlIdx + HLS.length - 1) % HLS.length })); },
+      hlNext: () => { clearTimeout(this.demoT); this.setState((st: any) => ({ hlIdx: (st.hlIdx + 1) % HLS.length })); },
+
+      fonts: Object.keys(fontDefs).map((name: any) => ({ name, family: fontDefs[name].f, size: fontDefs[name].ui, pressed: String(s.font === name), c: s.font === name ? 'var(--color-accent-700)' : 'var(--color-text)', sh: s.font === name ? 'inset 0 0 0 1px var(--color-accent)' : 'none', pick: () => this.setState({ font: name }) })),
+      fFamily: fontDefs[s.font].f, fSize: fontDefs[s.font].sz + 'px',
+      inks: inks.map((k: any) => ({ ...k, ring: s.ink === k.c ? '1.5px solid var(--color-text)' : '1.5px solid transparent', pick: () => this.setState({ ink: k.c }) })),
+      inkColor: s.ink,
+      sentences: sentences.map((t, i) => {
+        const on = s.picked.includes(i) || s.sweep === i;
+        return { t, bs: on ? '100% 100%' : '0% 100%', tr: s.sweep === i ? 'background-size .7s cubic-bezier(.6,0,.35,1)' : 'none', line: s.picked.includes(i) ? 'inset 0 -1.5px 0 var(--color-accent)' : 'none', toggle: () => this.toggle(i), key: (e: any) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.toggle(i); } } };
+      }),
+      notes: [...s.picked].sort((a, b) => a - b).map((i: any) => {
+        const fresh = i === s.lastAdded;
+        return { t: sentences[i], clip: fresh && !s.revealed ? 'inset(-12px 100% -12px -80px)' : 'inset(-12px -12px -12px -80px)', tr: fresh && s.revealed ? 'clip-path 1.3s cubic-bezier(.45,0,.55,1)' : 'none' };
+      }),
+      slipText: s.slip ? sentences[s.slip.i] : '',
+      slipOp: s.slip ? (s.slip.ph === 'fly' ? 0 : 1) : 0,
+      slipTf: s.slip && s.slip.ph === 'fly' ? 'translate(10px, 200px) scale(.9) rotate(1.5deg)' : 'translate(0, 0)',
+      slipTr: s.slip ? (s.slip.ph === 'fly' ? 'transform .8s cubic-bezier(.5,0,.2,1), opacity .4s .45s' : 'opacity .2s') : 'none',
+      noPicked: s.picked.length === 0,
+
+      replayClip: () => { clearTimeout(this.demoT); this.setState({ act: 1 }, () => this.runSeq(1, 'cPh', [[0, 400], [1, 500], [2, 1300], [3, 800], [4, 1100], [5, 3400]])); },
+      cBoxOp: s.cPh >= 1 ? 1 : 0, cBoxW: s.cPh >= 2 ? '100%' : '0%', cBoxH: s.cPh >= 2 ? '100%' : '0%',
+      cChipOp: s.cPh >= 3 ? 1 : 0, cChipTf: s.cPh === 4 ? 'scale(.9)' : s.cPh >= 3 ? 'scale(1)' : 'scale(.8)',
+      curOp: s.cPh >= 1 && s.cPh <= 4 ? 1 : 0,
+      curTf: 'translate(' + (({ 0: '10px, 60px', 1: '22px, 87px', 2: '236px, 178px', 3: '200px, 68px', 4: '200px, 68px', 5: '200px, 68px' }) as Record<number, string>)[s.cPh] + ')',
+      clipFigOp: s.cPh >= 4 ? 1 : 0, clipFigTf: s.cPh >= 4 ? 'translate(0,0) rotate(-1.5deg)' : 'translate(-150px,-40px) rotate(0deg) scale(.9)',
+      clipNoteClip: s.cPh >= 5 ? 'inset(-10px -10px -10px -10px)' : 'inset(-10px 100% -10px -10px)',
+      d1: s.dPh >= 1 ? 'inset(-4px -4px -4px -4px)' : 'inset(-4px 100% -4px -4px)',
+      d2: s.dPh >= 2 ? 'inset(-4px -4px -4px -4px)' : 'inset(-4px 100% -4px -4px)',
+      d3: s.dPh >= 3 ? 'inset(-4px -4px -4px -4px)' : 'inset(-4px 100% -4px -4px)',
+      d4: s.dPh >= 4 ? 'inset(-4px -4px -4px -4px)' : 'inset(-4px -4px 100% -4px)',
+      d5: s.dPh >= 5 ? 'inset(-4px -4px -4px -4px)' : 'inset(-4px 100% -4px -4px)',
+      d6: s.dPh >= 6 ? 'circle(80% at 50% 50%)' : 'circle(0% at 50% 50%)',
+      d7: s.dPh >= 7 ? 'inset(-6px -6px -6px -6px)' : 'inset(-6px 100% -6px -6px)',
+      dTr: s.dPh === 0 ? 'none' : 'clip-path .6s cubic-bezier(.45,0,.4,1)', dTrSlow: s.dPh === 0 ? 'none' : 'clip-path 1.2s cubic-bezier(.45,0,.55,1)',
+      penOp: s.dPh < 7 ? 1 : 0,
+      penTf: 'translate(' + ['66px, 20px', '176px, 46px', '250px, 40px', '368px, 46px', '318px, 128px', '380px, 170px', '384px, 236px', '232px, 278px'][s.dPh] + ')',
+      papers: Object.keys(PAPER).map((name: any) => ({ name, pressed: String(s.paper === name), c: s.paper === name ? 'var(--color-accent-700)' : 'var(--color-text)', sh: s.paper === name ? 'inset 0 0 0 1px var(--color-accent)' : 'none', pick: () => this.setState({ paper: name }) })),
+      paperImg: PAPER[s.paper][0], paperSize: PAPER[s.paper][1], paperName: s.paper,
+
+      pdfTabs: PDFS.map((p, i) => ({ name: p.name, pick: () => { this.userPdf = true; clearTimeout(this.demoT); this.switchPdf(i); }, top: i === s.pdf ? 'inset 0 2px 0 var(--color-accent)' : 'none', bg: i === s.pdf ? 'var(--color-neutral-100)' : 'transparent', border: i === s.pdf ? 'var(--color-divider)' : 'transparent', color: i === s.pdf ? 'var(--color-text)' : 'color-mix(in srgb, var(--color-text) 62%, transparent)' })),
+      pdfOp: s.pdfIn ? 1 : 0, pdfTf: s.pdfIn ? 'none' : 'translateY(10px)', pdfTr: s.pdfIn ? 'opacity .45s, transform .6s cubic-bezier(.2,.75,.15,1)' : 'none',
+      pdfRun: pd.run, pdfPage: pd.page, pdfTitle: pd.title, pdfBody: pd.body,
+
+      night: night.toFixed(3),
+      nightBg: `color-mix(in oklab, var(--color-bg), color-mix(in oklab, var(--color-neutral-900) 72%, black) ${(night * 100).toFixed(1)}%)`,
+      nightInk: `color-mix(in oklab, var(--color-text), var(--color-neutral-100) ${(night * 100).toFixed(1)}%)`,
+      timeText: `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`,
+      timePct: ((1 - s.secs / 1500) * 100).toFixed(2) + '%',
+      pages: Array.from({ length: 12 }, (_, i) => ({ fill: i < 7 ? 'var(--color-accent-400)' : 'transparent', border: i < 7 ? 'var(--color-accent-400)' : 'color-mix(in srgb, currentColor 30%, transparent)' })),
+      sounds: SOUNDS.map((name: any) => {
+        const on = s.sound === name;
+        return { name, on: String(on), border: on ? 'var(--color-accent-400)' : 'color-mix(in srgb, currentColor 24%, transparent)', color: on ? 'var(--color-accent-400)' : 'inherit', pick: () => this.setState({ sound: on ? null : name }) };
+      }),
+
+      lineV: s.loaded ? 'scaleY(1)' : 'scaleY(0)', lineH: s.loaded ? 'scaleX(1)' : 'scaleX(0)', boxDash: s.loaded ? 0 : 1400, boxV: s.loaded ? 'scaleY(1)' : 'scaleY(0)', boxH: s.loaded ? 'scaleX(1)' : 'scaleX(0)',
+      rowA: [...QUOTES.slice(0, 4), ...QUOTES.slice(0, 4)].map(card), rowB: [...QUOTES.slice(4), ...QUOTES.slice(4)].map(card),
+      markTf: `translateY(${((1 - s.foot) * 18).toFixed(1)}%)`
+    };
+  }
+
+  render() {
+    return <LandingView v={this.renderVals()} setStory={this.setStory} setDesk={this.setDesk} setFs={this.setFs} setFocus={this.setFocus} />;
+  }
 }
 
-const MUTED = (pct: number) => `color-mix(in srgb,var(--color-text) ${pct}%,transparent)`;
-const SERIF = "var(--font-serif)";
-const PAPER = "#fbf9f9";
-const WRAP = "max-width:1480px;margin:0 auto;padding:0 clamp(16px,4vw,48px)";
-const DOTS = (size: number, shade = 400) =>
-  `background-color:var(--color-bg);background-image:radial-gradient(circle,var(--color-neutral-${shade}) 1px,transparent 1.2px);background-size:${size}px ${size}px`;
-
-const TOOLS: Record<string, ReactNode> = {
-  pointer: <path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z" />,
-  hand: (
-    <>
-      <path d="M18 11V6a2 2 0 0 0-4 0" />
-      <path d="M14 10V4a2 2 0 0 0-4 0v2" />
-      <path d="M10 10.5V6a2 2 0 0 0-4 0v8" />
-      <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
-    </>
-  ),
-  type: <path d="M4 7V4h16v3M9 20h6M12 4v16" />,
-  square: <rect width="18" height="18" x="3" y="3" />,
-  circle: <circle cx="12" cy="12" r="9" />,
-  arrow: <path d="M5 19 19 5M9 5h10v10" />,
-  pen: <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />,
-};
-
-function ToolRow({ active, style }: { active: string; style: string }) {
-  return (
-    <div style={css(style)}>
-      {Object.entries(TOOLS).map(([name, path]) => (
-        <span
-          key={name}
-          style={css(
-            `width:28px;height:28px;display:grid;place-items:center;${
-              name === active ? "background:var(--color-text);color:var(--color-bg)" : ""
-            }`,
-          )}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
-            {path}
-          </svg>
-        </span>
-      ))}
-    </div>
-  );
-}
-
-const SERIF_TEXT = { fontFamily: SERIF, fontSize: 11, fill: "currentColor", stroke: "none" } as const;
-
-function Contour() {
-  return (
-    <svg viewBox="0 0 300 190" width="100%" style={{ display: "block" }} fill="none" stroke="currentColor" strokeWidth="1">
-      <g transform="rotate(-18 150 95)">
-        <ellipse cx="150" cy="95" rx="132" ry="36" />
-        <ellipse cx="150" cy="95" rx="100" ry="27" />
-        <ellipse cx="150" cy="95" rx="68" ry="18" />
-        <ellipse cx="150" cy="95" rx="36" ry="9.5" />
-      </g>
-      <polyline points="40,150 66,104 88,132 108,96 124,113 138,94 146,101 150,95" stroke="#ec3013" strokeWidth="1.6" />
-      <g fill="#ec3013" stroke="none">
-        {[[40, 150], [66, 104], [88, 132], [108, 96], [124, 113], [138, 94], [150, 95]].map(([x, y]) => (
-          <circle key={x} cx={x} cy={y} r="2.4" />
-        ))}
-      </g>
-      <path d="M14 180h276M14 180V8" strokeWidth="0.8" />
-      <text x="276" y="176" {...SERIF_TEXT} fontStyle="italic">w₁</text>
-      <text x="20" y="16" {...SERIF_TEXT} fontStyle="italic">w₂</text>
-    </svg>
-  );
-}
-
-function BTree() {
-  return (
-    <svg viewBox="0 0 320 140" width="100%" style={{ display: "block" }} fill="none" stroke="currentColor" strokeWidth="1">
-      <rect x="110" y="14" width="100" height="24" />
-      <path d="M143 14v24M176 14v24" />
-      <text x="121" y="31" {...SERIF_TEXT}>7</text>
-      <text x="153" y="31" {...SERIF_TEXT}>17</text>
-      <text x="186" y="31" {...SERIF_TEXT}>24</text>
-      {[10, 88, 166, 244].map((x) => (
-        <rect key={x} x={x} y="104" width="66" height="24" />
-      ))}
-      <text x="18" y="121" {...SERIF_TEXT}>2  3  5</text>
-      <text x="94" y="121" {...SERIF_TEXT}>7  13  14</text>
-      <text x="178" y="121" {...SERIF_TEXT}>17  19</text>
-      <text x="250" y="121" {...SERIF_TEXT}>24  30  33</text>
-      <path d="M112 38 L43 104M143 38 L121 104M176 38 L199 104M208 38 L277 104" strokeWidth="0.9" />
-      <path d="M76 116h10M154 116h10M232 116h10" stroke="#ec3013" strokeWidth="1.4" />
-    </svg>
-  );
-}
-
-const SENT = [
-  "Walking the page table on every access would double memory traffic.",
-  "The translation lookaside buffer caches recent VPN → PFN mappings; a TLB hit completes translation in a cycle or two.",
-  "If the page-table entry is marked not present, the MMU raises a page fault.",
-  "The OS finds the page on disk, reads it in, and restarts the faulting instruction.",
-];
-const STEPS = [
-  "Reading page 1",
-  "Text selected — Add to notebook",
-  "Quote placed on the canvas with its page link",
-  "Capturing Figure 7.1",
-  "Figure on the canvas, annotated",
-];
-const EASE = "cubic-bezier(.2,.7,.2,1)";
-
-const LIBRARY = [
-  { course: "CS 4780 · Machine Learning", docs: [["Lecture 7 — Optimization for Learning", "7 items", "25 min ago"], ["Linear Algebra Review Sheet", "Empty", "4 days ago"]] },
-  { course: "CS 4320 · Database Systems", docs: [["Lecture 9 — B+ Tree Indexes", "3 items", "Yesterday"]] },
-  { course: "CS 4410 · Operating Systems", docs: [["Virtual Memory and Paging", "5 items", "2 days ago"], ["Problem Set 3 — CPU Scheduling", "Empty", "9 days ago"]] },
-];
-const COMPARE = [
-  ["Getting a quote into notes", "Copy, switch windows, paste, retype the page number", "Select, then Add to notebook"],
-  ["Figures and diagrams", "Screenshot, crop, upload", "Draw a box around the figure and import it"],
-  ["Finding the source later", "Search the PDF for the phrase", "Pick up on the page you left off"],
-  ["Your own sketches", "A third app, or paper", "Pen, shapes and connectors on the same canvas"],
-];
-
-const Arrow = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ strokeWidth: 2, marginLeft: "auto" }}>
-    <path d="M5 12h14M13 6l6 6-6 6" />
-  </svg>
-);
-
-function Handles({ offset, size }: { offset: number; size: number }) {
-  const base = `position:absolute;width:${size}px;height:${size}px;background:var(--color-bg);border:2px solid var(--color-accent);`;
-  return (
-    <>
-      <span style={css(`${base}left:${-offset}px;top:${-offset}px`)} />
-      <span style={css(`${base}right:${-offset}px;top:${-offset}px`)} />
-      <span style={css(`${base}left:${-offset}px;bottom:${-offset}px`)} />
-      <span style={css(`${base}right:${-offset}px;bottom:${-offset}px`)} />
-    </>
-  );
-}
-
-function Kicker({ children }: { children: ReactNode }) {
-  return (
-    <span style={css(`font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-accent-700)`)}>
-      {children}
-    </span>
-  );
-}
-
-function Feature({
-  n, title, children, aside, last,
-}: {
-  n: string; title: string; children: ReactNode; aside: ReactNode; last?: boolean;
-}) {
-  return (
-    <section
-      style={css(
-        `display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:32px 64px;padding:48px 0${
-          last ? " clamp(56px,8vw,96px)" : ";border-bottom:2px solid var(--color-divider)"
-        }`,
-      )}
-    >
-      <div style={css("display:flex;flex-direction:column;gap:14px;max-width:46ch")}>
-        <span style={css("font-weight:800;font-size:15px;font-variant-numeric:tabular-nums")}>{n}</span>
-        <h3 style={css("font-size:28px;margin:0")}>{title}</h3>
-        {children}
-      </div>
-      {aside}
-    </section>
-  );
-}
-
-const body = `margin:0;font-size:16px;line-height:1.6;color:${MUTED(80)}`;
-const dot = (c: string) => `width:12px;height:12px;background:${c}`;
-
-export default function Landing() {
-  const [phase, setPhase] = useState(0);
-  const [picked, setPicked] = useState<number[]>([1]);
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      const t = setTimeout(() => setPhase(4), 0);
-      return () => clearTimeout(t);
-    }
-    const t = setInterval(() => setPhase((p) => (p + 1) % 6), 1700);
-    return () => clearInterval(t);
-  }, []);
-
-  const p = Math.min(phase, 4);
-  const show = (k: number) => p >= k;
-  const toggle = (i: number) =>
-    setPicked((cur) => (cur.includes(i) ? cur.filter((x) => x !== i) : [...cur, i]));
-
-  return (
-    <div style={css("font-family:var(--font-sans);color:var(--color-text);background:var(--color-bg)")}>
-      <nav className="nav" style={css("position:sticky;top:0;z-index:10;background:var(--color-bg);padding-inline:clamp(16px,4vw,48px)")}>
-        <span className="nav-brand" style={css("display:flex;align-items:center;gap:10px")}>
-          <span style={css(dot("var(--color-accent)"))} />
-          Margin
-        </span>
-        <a href="#features" className="hidden sm:inline">Features</a>
-        <a href="#how" className="hidden sm:inline">How it works</a>
-        <Link className="btn btn-primary" href="/dashboard" style={css("color:var(--color-bg);white-space:nowrap")}>
-          Open your workspace
-        </Link>
-      </nav>
-
-      <div style={css(WRAP)}>
-        <section style={css("padding:clamp(48px,8vw,104px) 0 40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:32px 64px;align-items:end")}>
-          <h1 style={css("font-size:clamp(38px,5.2vw,76px);line-height:1.04;letter-spacing:-0.03em;margin:0 0 0 -0.05em;white-space:nowrap")}>
-            <span style={{ display: "block" }}>Read the PDF.</span>
-            <span style={{ display: "block" }}>Build the notes</span>
-            <span style={{ display: "block" }}>right beside it.</span>
-          </h1>
-          <div style={css("display:flex;flex-direction:column;gap:24px;max-width:52ch")}>
-            <p style={css(`font-size:18px;line-height:1.55;margin:0;color:${MUTED(82)}`)}>
-              Margin puts your textbook and an editable notebook side by side. Select a passage or clip a figure,
-              and it lands on the page in your own handwriting, ready for your arrows, sketches and annotations.
-            </p>
-            <div style={css("display:flex;gap:10px;flex-wrap:wrap")}>
-              <Link className="btn btn-primary" href="/dashboard" style={css("color:var(--color-bg);height:44px;padding:0 18px;font-size:15px;justify-content:flex-start;min-width:220px;gap:10px;white-space:nowrap")}>
-                Open your workspace
-                <Arrow />
-              </Link>
-              <a className="btn btn-secondary" href="#how" style={css("color:var(--color-text);height:44px;padding:0 18px;font-size:15px;white-space:nowrap")}>
-                See how it works
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <figure aria-label="Margin study workspace: a PDF on the left, a notebook canvas on the right" style={css("margin:0 0 clamp(64px,9vw,120px);border:2px solid var(--color-text);background:var(--color-bg);box-shadow:var(--shadow-lg)")}>
-          <div style={css("display:flex;align-items:center;gap:12px;height:44px;padding:0 14px;border-bottom:2px solid var(--color-divider)")}>
-            <span style={css("width:10px;height:10px;background:var(--color-accent);flex:none")} />
-            <span style={css("display:flex;flex-direction:column;min-width:0;margin-right:auto")}>
-              <span style={css("font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-accent-700)")}>Machine Learning</span>
-              <span style={css("font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis")}>Lecture 7 — Optimization for Learning</span>
-            </span>
-            <span style={css("display:flex;border:1px solid var(--color-divider);font-size:12px")}>
-              <span style={{ padding: "4px 10px" }}>PDF</span>
-              <span style={css("padding:4px 10px;background:var(--color-accent);color:var(--color-bg)")}>Split</span>
-              <span style={css("padding:4px 10px;border-left:1px solid var(--color-divider)")}>Notes</span>
-            </span>
-            <span style={css(`font-size:12px;color:${MUTED(70)};white-space:nowrap`)}>{p === 2 || p === 4 ? "Saving…" : "Saved"}</span>
-          </div>
-          <div style={css("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))")}>
-            <div style={css("background:var(--color-surface);padding:28px clamp(12px,3vw,40px) 0;height:500px;overflow:hidden;border-right:2px solid var(--color-divider);position:relative")}>
-              <div style={css(`background:${PAPER};box-shadow:var(--shadow-md);padding:32px 36px;font-family:${SERIF};font-size:14px;line-height:1.6;color:#201e1d;max-width:480px;margin:0 auto;height:560px`)}>
-                <div style={css("display:flex;justify-content:space-between;font-family:var(--font-sans);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:#6b6766;padding-bottom:8px;border-bottom:1px solid #cfcaca;margin-bottom:18px")}>
-                  <span>Lecture 7</span><span>1</span>
-                </div>
-                <div style={css("font-weight:600;font-size:20px;margin-bottom:10px")}>7.1 Gradient descent</div>
-                <p style={css("margin:0 0 12px;position:relative")}>
-                  That direction is the negative gradient.{" "}
-                  <span style={{ background: show(1) ? "var(--color-accent-200)" : "transparent", boxShadow: show(2) ? "inset 0 -2px 0 var(--color-accent)" : "none", transition: "background .4s, box-shadow .3s" }}>
-                    The update rule is wₜ₊₁ = wₜ − η∇L(wₜ), where the step size η is called the learning rate.
-                  </span>{" "}
-                  Each step uses only first-order information.
-                  <span style={{ ...css("position:absolute;left:40px;top:-26px;display:flex;gap:2px;padding:2px;background:var(--color-text);color:var(--color-bg);font-family:var(--font-sans);font-size:11px;font-weight:600;box-shadow:var(--shadow-lg);pointer-events:none;white-space:nowrap"), opacity: p === 1 ? 1 : 0, transform: p === 1 ? "none" : "translateY(4px)", transition: `opacity .2s, transform .2s ${EASE}` }}>
-                    <span style={{ padding: "5px 9px" }}>Select</span>
-                    <span style={{ padding: "5px 9px", background: "var(--color-accent)" }}>Export to board</span>
-                  </span>
-                </p>
-                <div style={{ padding: 8, margin: "6px 0", outline: p === 3 ? "2px dashed var(--color-accent)" : "1px solid transparent", outlineOffset: 2, background: p === 3 ? "var(--color-accent-100)" : "transparent", transition: "background .2s" }}>
-                  <div style={{ color: "#2a2726" }}><Contour /></div>
-                  <div style={css("font-size:11.5px;line-height:1.4;color:#3b3837;margin-top:6px")}>Figure 7.1  Gradient descent on an elongated quadratic bowl.</div>
-                </div>
-              </div>
-            </div>
-            <div className="dot-grid" style={css(`height:500px;position:relative;overflow:hidden;${DOTS(22)}`)}>
-              <ToolRow active="pointer" style="display:flex;gap:2px;padding:6px 8px;border-bottom:1px solid var(--color-divider);background:var(--color-bg)" />
-              <div style={css("position:absolute;left:28px;top:70px;font-weight:800;font-size:24px;letter-spacing:-0.02em")}>Gradient descent</div>
-              <div style={{ ...css("position:absolute;left:28px;top:116px;width:min(300px, calc(100% - 56px));background:var(--color-neutral-100);border:1px solid var(--color-divider)"), boxShadow: p === 2 ? "0 0 0 6px var(--color-accent-200)" : "var(--shadow-sm)", opacity: show(2) ? 1 : 0, transform: show(2) ? "none" : "translateX(-60px) scale(.96)", transition: `opacity .4s, transform .55s ${EASE}, box-shadow .6s` }}>
-                <div style={css("padding:5px 10px;border-bottom:1px solid var(--color-neutral-300);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600")}>Handwritten note</div>
-                <div style={css("padding:8px 10px 10px;font-family:cursive;font-size:15px;line-height:1.5")}>
-                  The update rule is wₜ₊₁ = wₜ − η∇L(wₜ), where the step size η is called the learning rate.
-                </div>
-              </div>
-              <div style={{ ...css(`position:absolute;right:28px;top:214px;width:min(250px, calc(100% - 56px));background:${PAPER};border:1px solid var(--color-divider);padding:10px;outline-offset:4px;box-shadow:var(--shadow-sm)`), outline: p === 4 ? "2px solid var(--color-accent)" : "2px solid transparent", opacity: show(4) ? 1 : 0, transform: show(4) ? "none" : "translateX(-80px) scale(.94)", transition: `opacity .4s, transform .55s ${EASE}` }}>
-                <div style={{ color: "#2a2726" }}><Contour /></div>
-                <div style={css("display:flex;justify-content:space-between;font-size:10px;margin-top:6px")}>
-                  <span style={{ fontFamily: SERIF, color: "#3b3837" }}>Figure 7.1</span><span style={{ color: MUTED(72) }}>p. 1</span>
-                </div>
-                <Handles offset={6} size={8} />
-              </div>
-              <div style={{ ...css("position:absolute;right:28px;top:412px;width:min(250px, calc(100% - 56px))"), opacity: show(4) ? 1 : 0, transition: "opacity .5s .35s" }}>
-                <svg width="40" height="22" viewBox="0 0 40 22" fill="none" style={{ display: "block", stroke: "var(--color-accent)", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" }}>
-                  <path d="M10 20 C 12 12, 16 6, 22 2" /><path d="M14 3 L22 2 L21 10" />
-                </svg>
-                <div style={css("font-size:13px;line-height:1.4;color:var(--color-accent-700);margin-top:2px")}>Narrow valley = badly conditioned. That&apos;s why it zig-zags.</div>
-              </div>
-            </div>
-          </div>
-          <figcaption style={css(`display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between;margin:0;padding:10px 14px;border-top:2px solid var(--color-divider);font-size:12px;color:${MUTED(72)}`)}>
-            <span>{p + 1} / 5 — {STEPS[p]}</span>
-            <span>Sample: Machine Learning, Lecture 7</span>
-          </figcaption>
-        </figure>
-      </div>
-
-      <hr className="hr" style={{ margin: 0 }} />
-
-      <div style={css(WRAP)} id="features">
-        <div style={css("padding:clamp(48px,7vw,88px) 0 12px;display:flex;flex-direction:column;gap:12px")}>
-          <Kicker>What it does</Kicker>
-          <h2 style={css("font-size:clamp(30px,3.6vw,46px);margin:0;max-width:20ch;letter-spacing:-0.02em")}>Four moves, one workspace.</h2>
-        </div>
-
-        <Feature
-          n="01"
-          title="Select a passage. It's already in your notes."
-          aside={
-            <div style={css("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));border:2px solid var(--color-divider)")}>
-              <div style={css(`background:${PAPER};padding:22px 24px;font-family:${SERIF};font-size:15px;line-height:1.65;color:#201e1d`)}>
-                <div style={css("font-family:var(--font-sans);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:#6b6766;margin-bottom:10px")}>Study guide 6 · p. 2</div>
-                {SENT.map((text, i) => (
-                  <span
-                    key={i}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => toggle(i)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggle(i);
-                      }
-                    }}
-                    style={{ background: picked.includes(i) ? "var(--color-accent-200)" : "transparent", boxShadow: picked.includes(i) ? "inset 0 -2px 0 var(--color-accent)" : "none", cursor: "pointer", transition: "background .15s" }}
-                  >
-                    {text}{" "}
-                  </span>
-                ))}
-              </div>
-              <div className="dot-grid" style={css(`padding:16px;display:flex;flex-direction:column;gap:10px;${DOTS(20)};min-height:260px`)}>
-                <div style={css("display:flex;justify-content:space-between;align-items:baseline")}>
-                  <span style={css("font-weight:800;font-size:15px")}>Notebook</span>
-                  <span style={css(`font-size:12px;color:${MUTED(70)}`)}>{picked.length} {picked.length === 1 ? "note" : "notes"}</span>
-                </div>
-                {picked.length === 0 && (
-                  <span style={css(`font-size:13px;color:${MUTED(70)};border:1px dashed var(--color-divider);padding:14px;background:var(--color-bg)`)}>Exported notes appear here.</span>
-                )}
-                {picked.map((i) => (
-                  <div key={i} style={css("background:var(--color-neutral-100);border:1px solid var(--color-divider);box-shadow:var(--shadow-sm)")}>
-                    <div style={css("padding:4px 10px;border-bottom:1px solid var(--color-neutral-300);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600")}>Handwritten · p. 2</div>
-                    <div style={css("padding:8px 10px;font-family:cursive;font-size:14px;line-height:1.45")}>{SENT[i]}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          }
-        >
-          <p style={css(body)}>Select text in the PDF and choose Export to board. The exact words land on your notebook page in the handwriting font and colour you picked, line by line on the ruled paper.</p>
-          <p style={css(`margin:0;font-size:13px;color:${MUTED(70)}`)}>Try it: click any sentence in the excerpt.</p>
-        </Feature>
-
-        <Feature
-          n="02"
-          title="Lift a diagram off the page."
-          aside={
-            <div style={css("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));border:2px solid var(--color-divider);background:var(--color-surface)")}>
-              <div style={{ padding: 22 }}>
-                <div style={css(`background:${PAPER};padding:16px;box-shadow:var(--shadow-sm);font-family:${SERIF}`)}>
-                  <div style={css("font-size:10px;font-family:var(--font-sans);letter-spacing:0.06em;text-transform:uppercase;color:#6b6766;margin-bottom:10px")}>Lecture 9 · p. 1</div>
-                  <div style={css("outline:2px dashed var(--color-accent);outline-offset:4px;background:var(--color-accent-100);padding:8px;position:relative")}>
-                    <div style={{ color: "#2a2726" }}><BTree /></div>
-                    <span style={css("position:absolute;top:-6px;right:-6px;background:var(--color-accent);color:#fff;font-family:var(--font-sans);font-size:10px;font-weight:600;padding:2px 6px")}>Import to notes</span>
-                  </div>
-                  <div style={css("font-size:11px;line-height:1.4;margin-top:10px;color:#3b3837")}>Figure 9.1  A B+ tree of order 2.</div>
-                </div>
-              </div>
-              <div className="dot-grid" style={css(`padding:22px;${DOTS(20)};display:flex;flex-direction:column;gap:10px;justify-content:center;border-left:2px solid var(--color-divider)`)}>
-                <div style={css(`background:${PAPER};border:1px solid var(--color-divider);box-shadow:var(--shadow-md);padding:10px`)}>
-                  <div style={{ color: "#2a2726" }}><BTree /></div>
-                  <div style={css("font-size:10px;margin-top:6px;font-family:" + SERIF)}>Figure 9.1</div>
-                </div>
-                <div style={css("font-size:13px;color:var(--color-accent-700);border-top:2px solid var(--color-accent);padding-top:6px")}>Leaves are linked, so range scans never climb back to the root.</div>
-              </div>
-            </div>
-          }
-        >
-          <p style={css(body)}>Choose Clip diagram, draw a dashed box around a figure and import it. It lands in the notebook as an image you can move, resize and circle.</p>
-        </Feature>
-
-        <Feature
-          n="03"
-          title="A canvas that edits like a whiteboard."
-          aside={
-            <div style={css("border:2px solid var(--color-divider);display:flex;flex-direction:column;align-self:start")}>
-              <ToolRow active="arrow" style="display:flex;gap:2px;padding:6px 8px;border-bottom:1px solid var(--color-divider)" />
-              <div className="dot-grid" style={css(`position:relative;overflow:hidden;aspect-ratio:460 / 290;${DOTS(20)}`)}>
-                <div style={css("position:absolute;left:5%;top:7%;font-weight:800;font-size:clamp(14px,2vw,20px)")}>Page faults</div>
-                <div style={css("position:absolute;left:5%;top:23%;width:39%;padding:2%;border:2px solid var(--color-text);font-size:clamp(10px,1.4vw,13px);line-height:1.4")}>PTE not present → MMU traps to the OS</div>
-                <div style={css("position:absolute;left:55%;top:20%;width:37%;padding:2%;font-size:clamp(10px,1.4vw,13px);line-height:1.4;outline:2px solid var(--color-accent);outline-offset:4px")}>Find page on disk, evict a frame if full, read in, retry instruction</div>
-                <svg viewBox="0 0 460 290" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", strokeLinecap: "round", strokeLinejoin: "round" }}>
-                  <path d="M210 96 L240 90" style={{ stroke: "var(--color-text)", strokeWidth: 2 }} />
-                  <path d="M231 85 L240 90 L232 97" style={{ stroke: "var(--color-text)", strokeWidth: 2 }} />
-                  <ellipse cx="120" cy="214" rx="86" ry="34" style={{ stroke: "var(--color-text)", strokeWidth: 2 }} />
-                  <path d="M318 160 C 300 200, 250 214, 214 212" style={{ stroke: "var(--color-accent)", strokeWidth: 2 }} />
-                  <path d="M60 254 C 90 262, 140 260, 182 250" style={{ stroke: "var(--color-accent)", strokeWidth: 2.4 }} />
-                </svg>
-                <div style={css("position:absolute;left:13%;top:70%;font-size:clamp(10px,1.4vw,13px);font-weight:600")}>2²⁰ PTEs @ 4 KB</div>
-              </div>
-            </div>
-          }
-        >
-          <p style={css(body)}>Draw with pens and shapes, type, erase, change colours and zoom. Everything resizes, everything undoes. Your handwritten notes are objects too, so you can move or delete them.</p>
-          <ul style={css("margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--color-divider);font-size:13px")}>
-            {["Handwritten fonts", "Freehand pen", "Shapes and arrows", "Lined or blank pages", "Resize and arrange", "Undo, zoom, pan"].map((t) => (
-              <li key={t} style={{ padding: "8px 0", borderBottom: "1px solid var(--color-divider)" }}>{t}</li>
-            ))}
-          </ul>
-        </Feature>
-
-        <Feature
-          last
-          n="04"
-          title="Every PDF keeps its notebook."
-          aside={
-            <div style={css("border:2px solid var(--color-divider)")}>
-              <div style={css(`display:grid;grid-template-columns:minmax(0,1fr) 90px 90px;gap:12px;padding:10px 14px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:${MUTED(65)};border-bottom:2px solid var(--color-divider)`)}>
-                <span>Board</span><span>Notebook</span><span>Opened</span>
-              </div>
-              {LIBRARY.map((g) => (
-                <Fragment key={g.course}>
-                  <div style={css("padding:10px 14px 4px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-accent-700);background:var(--color-surface)")}>{g.course}</div>
-                  {g.docs.map(([title, notes, opened]) => (
-                    <div key={title} style={css("display:grid;grid-template-columns:minmax(0,1fr) 90px 90px;gap:12px;padding:10px 14px;border-bottom:1px solid var(--color-divider);font-size:14px")}>
-                      <span style={css("font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis")}>{title}</span>
-                      <span style={{ fontSize: 13 }}>{notes}</span>
-                      <span style={css(`font-size:13px;color:${MUTED(70)}`)}>{opened}</span>
-                    </div>
-                  ))}
-                </Fragment>
-              ))}
-            </div>
-          }
-        >
-          <p style={css(body)}>Boards and their notes travel together and live in your browser. Pick up exactly where you stopped, rename or delete boards, and download the notebook as a PDF whenever you like.</p>
-        </Feature>
-      </div>
-
-      <hr className="hr" style={{ margin: 0 }} />
-
-      <section id="how" style={css("max-width:1480px;margin:0 auto;padding:clamp(48px,7vw,88px) clamp(16px,4vw,48px)")}>
-        <div style={css("display:flex;flex-direction:column;gap:12px;margin-bottom:36px")}>
-          <Kicker>How it works</Kicker>
-          <h2 style={css("font-size:clamp(30px,3.6vw,46px);margin:0;letter-spacing:-0.02em")}>Three steps per chapter.</h2>
-        </div>
-        <ol style={css("list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));border-top:2px solid var(--color-text)")}>
-          {[
-            ["1", "Open a PDF", "Create a board and upload a textbook chapter, lecture notes or a study guide."],
-            ["2", "Capture text and figures", "Select a passage and export it, or clip a diagram from the page."],
-            ["3", "Organize, annotate, expand", "Arrange what you captured, draw arrows and add your own explanations."],
-          ].map(([n, title, text], idx) => (
-            <li key={n} style={css(`padding:24px ${idx < 2 ? "24px" : "0"} 28px ${idx === 0 ? "0" : "24px"};display:flex;flex-direction:column;gap:14px;${idx < 2 ? "border-right:2px solid var(--color-divider)" : ""}`)}>
-              <span style={css("font-weight:800;font-size:40px;line-height:1;color:var(--color-accent)")}>{n}</span>
-              <h3 style={css("font-size:22px;margin:0")}>{title}</h3>
-              <p style={css(`margin:0;font-size:15px;color:${MUTED(78)}`)}>{text}</p>
-              <div aria-hidden="true" className="dot-grid" style={css(`margin-top:auto;height:120px;border:1px solid var(--color-divider);${DOTS(14, 300)}`)} />
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <hr className="hr" style={{ margin: 0 }} />
-
-      <section style={css("max-width:1480px;margin:0 auto;padding:clamp(48px,7vw,88px) clamp(16px,4vw,48px)")}>
-        <div style={css("display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:32px 64px")}>
-          <div style={css("display:flex;flex-direction:column;gap:12px")}>
-            <Kicker>Why not two apps</Kicker>
-            <h2 style={css("font-size:clamp(28px,3vw,38px);margin:0;letter-spacing:-0.02em;max-width:16ch")}>Fewer windows, less copying, sources that stay attached.</h2>
-          </div>
-          <div role="table" aria-label="Comparison">
-            <div role="row" style={css(`display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);gap:16px;padding:8px 0;border-bottom:2px solid var(--color-divider);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:${MUTED(65)}`)}>
-              <span /><span>PDF viewer + notes app</span><span style={{ color: "var(--color-accent-700)" }}>Margin</span>
-            </div>
-            {COMPARE.map(([k, a, b]) => (
-              <div key={k} role="row" style={css("display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);gap:16px;padding:14px 0;border-bottom:1px solid var(--color-divider);font-size:14px;line-height:1.45")}>
-                <span style={{ fontWeight: 600 }}>{k}</span><span style={{ color: MUTED(72) }}>{a}</span><span>{b}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section style={{ background: "var(--color-accent)", color: "var(--color-bg)" }}>
-        <div style={css("max-width:1480px;margin:0 auto;padding:clamp(56px,8vw,104px) clamp(16px,4vw,48px);display:flex;flex-direction:column;gap:32px;align-items:flex-start")}>
-          <h2 style={css("font-size:clamp(36px,5vw,68px);line-height:1.04;margin:0 0 0 -0.04em;letter-spacing:-0.025em")}>
-            <span style={{ display: "block" }}>Your next chapter,</span>
-            <span style={{ display: "block" }}>one workspace.</span>
-          </h2>
-          <Link className="btn" href="/dashboard" style={css("color:var(--color-bg);border:2px solid var(--color-bg);height:48px;padding:0 20px;font-size:15px;min-width:240px;justify-content:flex-start;gap:10px;white-space:nowrap")}>
-            Open your workspace
-            <Arrow />
-          </Link>
-        </div>
-      </section>
-
-      <footer style={css(`max-width:1480px;margin:0 auto;padding:28px clamp(16px,4vw,48px);display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;font-size:13px;color:${MUTED(70)}`)}>
-        <span style={css("display:flex;align-items:center;gap:8px")}>
-          <span style={css("width:8px;height:8px;background:var(--color-accent)")} />
-          Margin — a study workspace for PDFs
-        </span>
-        <span style={css("display:flex;gap:20px")}>
-          <a href="#features" style={{ color: "inherit" }}>Features</a>
-          <a href="#how" style={{ color: "inherit" }}>How it works</a>
-          <Link href="/dashboard" style={{ color: "inherit" }}>Workspace</Link>
-        </span>
-      </footer>
-    </div>
-  );
-}
+export default Landing;
