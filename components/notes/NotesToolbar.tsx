@@ -40,6 +40,12 @@ const TOOLS: { id: NoteTool; label: string; key: string; icon: ReactNode }[] = [
 
 const GAP_AFTER = new Set<NoteTool>(["hand", "line", "image"]);
 
+/** On phones the tools people write with come first, so they aren't scrolled out of view. */
+const COMPACT_ORDER: NoteTool[] = [
+  "hand", "selection", "freedraw", "text", "eraser", "image", "rectangle", "diamond", "ellipse", "arrow", "line",
+];
+const GAP_AFTER_COMPACT = new Set<NoteTool>(["selection", "image"]);
+
 /** The notes pane's tool row: drawing tools, ink color and handwriting font. */
 export default function NotesToolbar({
   tool,
@@ -51,7 +57,10 @@ export default function NotesToolbar({
   fontId,
   onFont,
   disabled,
+  compact = false,
 }: {
+  /** Phone layout: one scrolling row of larger buttons, with the color and font pickers pinned right. */
+  compact?: boolean;
   tool: NoteTool;
   onTool: (t: NoteTool) => void;
   locked: boolean;
@@ -68,22 +77,30 @@ export default function NotesToolbar({
   useDismiss(colorOpen, colorRoot, () => setColorOpen(false));
 
   const sep = <span className="mx-1.5 h-[22px] w-px flex-none bg-[var(--color-divider)]" aria-hidden />;
+  const tools = compact ? COMPACT_ORDER.map((id) => TOOLS.find((t) => t.id === id)!) : TOOLS;
+  const gaps = compact ? GAP_AFTER_COMPACT : GAP_AFTER;
 
   return (
-    <div className="flex min-h-11 flex-none flex-wrap items-center gap-1 border-b border-[var(--color-divider)] px-1.5 py-0.5">
+    <div className="flex min-h-11 flex-none flex-wrap items-center gap-1 border-b border-[var(--color-divider)] px-1.5 py-0.5 compact:min-h-[46px] compact:flex-nowrap">
+      {/* beside the pickers on a phone this row scrolls; elsewhere it is part of the wrapping toolbar */}
+      <div
+        className="contents compact:flex compact:min-w-0 compact:flex-1 compact:items-center compact:gap-1 compact:overflow-x-auto compact:[scrollbar-width:none]"
+        // fade the right edge so it is clear the row scrolls
+        style={compact ? { maskImage: "linear-gradient(to right, #000 calc(100% - 28px), transparent)" } : undefined}
+      >
       <button
         onClick={onLock}
         aria-pressed={locked}
         aria-label={locked ? "Unlock notebook" : "Lock notebook"}
         title={locked ? "Unlock notebook" : "Lock notebook"}
-        className="btn btn-icon !h-8 !w-8 flex-none aria-pressed:text-[var(--color-accent)]"
+        className="btn btn-icon !h-8 !w-8 flex-none aria-pressed:text-[var(--color-accent)] compact:!h-9 compact:!w-9"
       >
         {locked
           ? icon(<><rect width="18" height="11" x="3" y="11" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></>)
           : icon(<><rect width="18" height="11" x="3" y="11" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></>)}
       </button>
       {sep}
-      {TOOLS.map((t) => (
+      {tools.map((t) => (
         <span key={t.id} className="flex flex-none items-center gap-1">
           <button
             onClick={() => onTool(t.id)}
@@ -91,24 +108,26 @@ export default function NotesToolbar({
             aria-label={t.label}
             title={`${t.label} (${t.key})`}
             disabled={locked || disabled}
-            className="btn btn-icon relative !h-8 !w-8 flex-none aria-pressed:!bg-[var(--color-accent)] aria-pressed:text-[var(--color-bg)]"
+            className="btn btn-icon relative !h-8 !w-8 flex-none aria-pressed:!bg-[var(--color-accent)] aria-pressed:text-[var(--color-bg)] compact:!h-9 compact:!w-9"
           >
             {t.icon}
-            <span aria-hidden className="absolute bottom-0 right-0.5 text-[0.5625rem] leading-none opacity-70">
+            <span aria-hidden className="absolute bottom-0 right-0.5 text-[0.5625rem] leading-none opacity-70 compact:hidden">
               {t.key === "H" ? "" : t.key}
             </span>
           </button>
-          {GAP_AFTER.has(t.id) && sep}
+          {gaps.has(t.id) && sep}
         </span>
       ))}
-      {sep}
+      </div>
+      <span className="contents compact:hidden">{sep}</span>
+      <div className="contents compact:flex compact:flex-none compact:items-center compact:gap-1 compact:border-l compact:border-[var(--color-divider)] compact:pl-1.5">
       <div ref={colorRoot} className="relative flex-none">
         <button
           onClick={() => setColorOpen((v) => !v)}
           aria-haspopup="listbox"
           aria-expanded={colorOpen}
           aria-label="Ink color"
-          className="flex h-8 w-[52px] flex-none items-center justify-center gap-1.5 border border-[var(--color-divider)] bg-[var(--color-bg)] p-0 hover:bg-[var(--color-surface)]"
+          className="flex h-8 w-[52px] flex-none items-center justify-center gap-1.5 compact:h-9 border border-[var(--color-divider)] bg-[var(--color-bg)] p-0 hover:bg-[var(--color-surface)]"
         >
           <span
             className="block size-4 flex-none border border-black/30"
@@ -123,8 +142,8 @@ export default function NotesToolbar({
           <div
             role="listbox"
             aria-label="Ink color"
-            className="absolute left-0 top-[38px] z-40 border-2 border-[var(--color-text)] bg-[var(--color-bg)] p-2 shadow-[var(--shadow-lg)]"
-            style={{ display: "grid", gridTemplateColumns: "repeat(6, 28px)", gap: 6 }}
+            className="absolute left-0 top-[38px] z-40 border-2 border-[var(--color-text)] bg-[var(--color-bg)] p-2 shadow-[var(--shadow-lg)] compact:fixed compact:inset-x-2 compact:bottom-2 compact:top-auto"
+            style={{ display: "grid", gridTemplateColumns: `repeat(6, ${compact ? 40 : 28}px)`, gap: 6, justifyContent: compact ? "center" : undefined }}
           >
             {INK_COLORS.map((c) => (
               <button
@@ -139,8 +158,8 @@ export default function NotesToolbar({
                 }}
                 className="border border-black/30"
                 style={{
-                  width: 28,
-                  height: 28,
+                  width: compact ? 40 : 28,
+                  height: compact ? 40 : 28,
                   padding: 0,
                   background: c.value,
                   cursor: "pointer",
@@ -155,6 +174,7 @@ export default function NotesToolbar({
       <span className="w-1 flex-none" aria-hidden />
       <div className="flex-none">
         <FontPicker value={fontId} onChange={onFont} />
+      </div>
       </div>
     </div>
   );

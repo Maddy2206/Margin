@@ -53,9 +53,15 @@ function clampScroll(
   return { x: axis(scrollX, vw, PAGE_W, m), y: axis(scrollY, vh, total, bottom) };
 }
 
+/** The notebook page in the middle of a pane `height` tall, for a given view. */
+function pageAt(scrollY: number, zoom: number, height: number, pages: number) {
+  return Math.min(Math.max(Math.floor((height / 2 / zoom - scrollY) / STRIDE), 0), pages - 1);
+}
+
 /** Zoom and scroll that show notebook page `index` centered, fitted to the pane width. */
 function viewForPage(width: number, index: number): PaperView {
-  const zoom = Math.min(Math.max((width - 48) / PAGE_W, 0.25), 1.5);
+  const margin = width < 600 ? 16 : 48; // a phone has no room for a wide desk margin
+  const zoom = Math.min(Math.max((width - margin) / PAGE_W, 0.25), 1.5);
   return { zoom, scrollX: (width / zoom - PAGE_W) / 2, scrollY: 24 / zoom - pageTop(index) };
 }
 
@@ -94,7 +100,10 @@ export default function NotesCanvas({
   onFont,
   getSource,
   onJumpToSource,
+  compact = false,
 }: {
+  /** Phone layout: no page tabs, a bigger toolbar, an Edit button, and Pan as the first tool. */
+  compact?: boolean;
   boardId: string;
   onApi?: (api: ExcalidrawImperativeAPI) => void;
   paper: Paper;
@@ -118,7 +127,7 @@ export default function NotesCanvas({
   const [view, setView] = useState<PaperView>({ scrollX: 0, scrollY: 0, zoom: 1 });
   const [pages, setPages] = useState(notePages ?? 1);
   const pagesRef = useRef(notePages ?? 1);
-  const props = useRef({ notePages, onNotePagesChange, onSaveState, getSource });
+  const props = useRef({ notePages, onNotePagesChange, onSaveState, getSource, compact });
   // The selected note's source and where it sits; the chip shows once the selection settles.
   const [source, setSource] = useState<{ src: NoteSource; box: { x: number; y: number; w: number; h: number } } | null>(null);
   const [chipVisible, setChipVisible] = useState(false);
@@ -136,7 +145,7 @@ export default function NotesCanvas({
   const [locked, setLocked] = useState(false);
 
   useEffect(() => {
-    props.current = { notePages, onNotePagesChange, onSaveState, getSource };
+    props.current = { notePages, onNotePagesChange, onSaveState, getSource, compact };
   });
 
   useEffect(() => {
@@ -156,10 +165,7 @@ export default function NotesCanvas({
       const api = apiRef.current;
       if (!api || prev === null || el.clientWidth === 0 || Math.abs(el.clientWidth - prev) < 8) return;
       const st = api.getAppState();
-      const page = Math.min(
-        Math.max(Math.floor((el.clientHeight / 2 / st.zoom.value - st.scrollY) / STRIDE), 0),
-        pagesRef.current - 1,
-      );
+      const page = pageAt(st.scrollY, st.zoom.value, el.clientHeight, pagesRef.current);
       const v = viewForPage(el.clientWidth, page);
       api.updateScene({
         appState: { scrollX: v.scrollX, scrollY: v.scrollY, zoom: { value: v.zoom } } as never,
@@ -184,8 +190,14 @@ export default function NotesCanvas({
       pagesRef.current = total;
       setPages(total);
       if (total !== props.current.notePages) props.current.onNotePagesChange?.(total);
-      // A brand-new notebook opens with page 1 fitted to the pane.
-      setStartView(s ? null : viewForPage(width, 0));
+      // A brand-new notebook opens with page 1 fitted to the pane. On a phone a saved
+      // (desktop) view would open zoomed in, so the saved page is fitted to the width too.
+      const saved = s?.appState as { scrollY?: number; zoom?: { value: number } } | undefined;
+      const page =
+        saved?.scrollY !== undefined && saved.zoom
+          ? pageAt(saved.scrollY, saved.zoom.value, wrapRef.current?.clientHeight ?? 0, total)
+          : 0;
+      setStartView(s && !props.current.compact ? null : viewForPage(width, page));
       setInitial(s ?? null);
     });
   }, [boardId]);
@@ -207,10 +219,7 @@ export default function NotesCanvas({
     [onApi],
   );
 
-  const currentPage = Math.min(
-    Math.max(Math.floor((size.h / 2 / view.zoom - view.scrollY) / STRIDE), 0),
-    pages - 1,
-  );
+  const currentPage = pageAt(view.scrollY, view.zoom, size.h, pages);
 
   function goToPage(index: number) {
     const api = apiRef.current;
@@ -290,6 +299,10 @@ export default function NotesCanvas({
     const el = api?.getSceneElements().find((e) => e.id === id);
     if (!api || !el) return;
     setNoteHidden(api, id, true);
+    // keep the note near the top so the on-screen keyboard doesn't cover it
+    if (props.current.compact) {
+      api.updateScene({ appState: { scrollY: 24 / api.getAppState().zoom.value - el.y } as never });
+    }
     setEditing({ id, meta, x: el.x, y: el.y });
   }
 
@@ -427,18 +440,25 @@ export default function NotesCanvas({
         ...(startView
           ? { scrollX: startView.scrollX, scrollY: startView.scrollY, zoom: { value: startView.zoom } }
           : {}),
+        // One finger scrolls the notes on a phone; pick Pen or Select to write or move things.
+        ...(compact
+          ? { activeTool: { type: "hand", customType: null, locked: false, fromSelection: false, lastActiveTool: null } }
+          : {}),
         viewBackgroundColor: "transparent",
       } as Partial<AppState>,
       files: (initial?.files ?? {}) as BinaryFiles,
     }),
+    // `compact` only matters for the first load; later changes must not hand Excalidraw a "new" scene
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [initial, startView],
   );
 
   const barBtn =
     "btn btn-icon !h-7 !w-7 disabled:opacity-40";
+  const phoneBtn = "btn btn-icon !h-9 !w-9 text-lg disabled:opacity-30";
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex h-[42px] flex-none border-b-2 border-[var(--color-divider)] bg-[var(--color-surface)]">
+      <div className="flex h-[42px] flex-none border-b-2 border-[var(--color-divider)] bg-[var(--color-surface)] compact:hidden">
         <div
           role="tablist"
           aria-label="Notebook pages"
@@ -480,6 +500,7 @@ export default function NotesCanvas({
         fontId={fontId}
         onFont={pickFont}
         disabled={initial === undefined}
+        compact={compact}
       />
       <div
         ref={wrapRef}
@@ -554,31 +575,66 @@ export default function NotesCanvas({
           </>
         )}
       </div>
-      <div className="flex h-[34px] flex-none items-center gap-1 overflow-hidden whitespace-nowrap border-t border-[var(--color-divider)] px-1.5 text-xs">
-        <button onClick={() => zoomBy(1 / 1.15)} aria-label="Zoom out notebook" className={barBtn}>
-          &minus;
-        </button>
-        <span className="min-w-10 text-center tabular-nums">{Math.round(view.zoom * 100)}%</span>
-        <button onClick={() => zoomBy(1.15)} aria-label="Zoom in notebook" className={barBtn}>
-          +
-        </button>
-        <button
-          onClick={() => goToPage(currentPage)}
-          className="px-2 py-1 hover:bg-[var(--color-surface)]"
-        >
-          Fit page
-        </button>
-        <span className="mx-1 h-[18px] w-px bg-[var(--color-divider)]" aria-hidden />
-        <button onClick={() => history(false)} aria-label="Undo" title="Undo (Ctrl+Z)" className={barBtn}>
-          &#8630;
-        </button>
-        <button onClick={() => history(true)} aria-label="Redo" title="Redo (Ctrl+Y)" className={barBtn}>
-          &#8631;
-        </button>
-        <span className="ml-auto pr-2 tabular-nums text-[color-mix(in_srgb,var(--color-text)_70%,transparent)]">
-          Page {currentPage + 1} of {pages}
-        </span>
-      </div>
+      {compact ? (
+        <div className="flex h-11 flex-none items-center gap-0.5 overflow-hidden whitespace-nowrap border-t border-[var(--color-divider)] px-1 text-sm">
+          <button onClick={() => history(false)} aria-label="Undo" className={phoneBtn}>
+            &#8630;
+          </button>
+          <button onClick={() => history(true)} aria-label="Redo" className={phoneBtn}>
+            &#8631;
+          </button>
+          <button onClick={() => goToPage(currentPage)} aria-label="Fit page to width" className="h-9 px-2.5 text-[0.8125rem] font-semibold active:bg-[var(--color-surface)]">
+            Fit
+          </button>
+          {selectedNote && !locked && (
+            <button
+              onClick={() => startEdit(selectedNote.id, selectedNote.meta)}
+              className="h-9 border border-[var(--color-accent)] px-3 text-[0.8125rem] font-bold text-[var(--color-accent-700)] active:bg-[var(--color-accent-100)]"
+            >
+              Edit note
+            </button>
+          )}
+          <span className="ml-auto" aria-hidden />
+          <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 0} aria-label="Previous page" className={phoneBtn}>
+            &lsaquo;
+          </button>
+          <span className="min-w-[3.25rem] text-center text-[0.8125rem] font-semibold tabular-nums" aria-live="polite">
+            {currentPage + 1} / {pages}
+          </span>
+          <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage >= pages - 1} aria-label="Next page" className={phoneBtn}>
+            &rsaquo;
+          </button>
+          <button onClick={addPage} aria-label="Add page" className={`${phoneBtn} !text-[var(--color-accent-700)]`}>
+            +
+          </button>
+        </div>
+      ) : (
+        <div className="flex h-[34px] flex-none items-center gap-1 overflow-hidden whitespace-nowrap border-t border-[var(--color-divider)] px-1.5 text-xs">
+          <button onClick={() => zoomBy(1 / 1.15)} aria-label="Zoom out notebook" className={barBtn}>
+            &minus;
+          </button>
+          <span className="min-w-10 text-center tabular-nums">{Math.round(view.zoom * 100)}%</span>
+          <button onClick={() => zoomBy(1.15)} aria-label="Zoom in notebook" className={barBtn}>
+            +
+          </button>
+          <button
+            onClick={() => goToPage(currentPage)}
+            className="px-2 py-1 hover:bg-[var(--color-surface)]"
+          >
+            Fit page
+          </button>
+          <span className="mx-1 h-[18px] w-px bg-[var(--color-divider)]" aria-hidden />
+          <button onClick={() => history(false)} aria-label="Undo" title="Undo (Ctrl+Z)" className={barBtn}>
+            &#8630;
+          </button>
+          <button onClick={() => history(true)} aria-label="Redo" title="Redo (Ctrl+Y)" className={barBtn}>
+            &#8631;
+          </button>
+          <span className="ml-auto pr-2 tabular-nums text-[color-mix(in_srgb,var(--color-text)_70%,transparent)]">
+            Page {currentPage + 1} of {pages}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

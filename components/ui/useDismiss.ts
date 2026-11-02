@@ -2,18 +2,18 @@
 
 import { useEffect, type RefObject } from "react";
 
-/** While `open`, calls `onClose` on a mousedown outside `root` or on Escape. */
+/** While `open`, calls `onClose` on a pointer press outside `root` (mouse or touch) or on Escape. */
 export function useDismiss(open: boolean, root: RefObject<HTMLElement | null>, onClose: () => void) {
   useEffect(() => {
     if (!open) return;
-    const away = (e: MouseEvent) => {
+    const away = (e: PointerEvent) => {
       if (!root.current?.contains(e.target as Node)) onClose();
     };
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("mousedown", away);
+    document.addEventListener("pointerdown", away);
     document.addEventListener("keydown", esc);
     return () => {
-      document.removeEventListener("mousedown", away);
+      document.removeEventListener("pointerdown", away);
       document.removeEventListener("keydown", esc);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

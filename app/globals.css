@@ -3,6 +3,13 @@
 /* The app is light only: `dark:` styles never apply, whatever the system theme is. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Phones and short landscape windows: the workspace drops chrome and enlarges touch targets. */
+@custom-variant compact {
+  @media (max-width: 899px), (max-height: 500px) {
+    @slot;
+  }
+}
+
 /* Modernist design system, from the "Margin" design project. */
 :root {
   color-scheme: light;
@@ -134,6 +141,10 @@ html { scroll-behavior: smooth; font-size: clamp(16px, 0.5vw + 8.8px, 22px); }
 .seg-opt + .seg-opt { border-left: 1px solid var(--color-divider); }
 .seg-opt[aria-pressed="true"] { background: var(--color-accent); color: var(--color-bg); }
 .seg-opt[aria-pressed="false"]:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+/* Workspace on a phone: roomier touch targets in the header's PDF / Split / Notes switch. */
+@media (max-width: 899px), (max-height: 500px) {
+  .ws-root .seg-opt { padding: 10px 11px; }
+}
 .tag {
   display: inline-flex; align-items: center; font-size: 0.6875rem; letter-spacing: 0.02em; padding: 3px 10px;
 }
@@ -145,7 +156,10 @@ html { scroll-behavior: smooth; font-size: clamp(16px, 0.5vw + 8.8px, 22px); }
 }
 
 /* The notes toolbar replaces Excalidraw's own tool, style and menu chrome. */
-.notes-canvas .excalidraw .layer-ui__wrapper {
+.notes-canvas .excalidraw .layer-ui__wrapper,
+.notes-canvas .excalidraw .App-top-bar,
+.notes-canvas .excalidraw .App-bottom-bar {
+  /* the last two are Excalidraw's own phone-sized chrome, which it switches to on narrow screens */
   display: none !important;
 }
 

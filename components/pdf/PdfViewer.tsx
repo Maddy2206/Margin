@@ -5,7 +5,7 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { Highlight, HighlightRect } from "@/lib/types";
 import { getFont, isWhite, type FontId } from "@/lib/handwriting-fonts";
 import { mostVisiblePage } from "@/lib/visible-page";
-import SelectionPopout from "./SelectionPopout";
+import SelectionPopout, { DOCK_BELOW } from "./SelectionPopout";
 import DiagramSelect, { type DiagramImage } from "./DiagramSelect";
 import "pdfjs-dist/web/pdf_viewer.css";
 
@@ -266,7 +266,10 @@ export default function PdfViewer({
   hasNote,
   jump,
   onJumpDone,
+  compact = false,
 }: {
+  /** Phone layout: thumbnails start closed, the footer is dropped and labels are shorter. */
+  compact?: boolean;
   blob: Blob;
   highlights?: Highlight[];
   initialZoom?: number | null;
@@ -314,7 +317,7 @@ export default function PdfViewer({
   const scale = zoom ?? fitScale;
   const [current, setCurrent] = useState(initialPage);
   const [pageDraft, setPageDraft] = useState<string | null>(null);
-  const [showThumbs, setShowThumbs] = useState(true);
+  const [showThumbs, setShowThumbs] = useState(!compact);
   const [pending, setPending] = useState<{ sel: PendingSelection; x: number; y: number } | null>(null);
   // A click on an existing highlight offers to remove it.
   const [hit, setHit] = useState<{ id: string; x: number; y: number } | null>(null);
@@ -534,9 +537,36 @@ export default function PdfViewer({
     onZoomChange?.(clamped);
   }
 
+  // Touch has no mouseup after a long-press selection, so follow the selection itself.
+  // It only ever shows the popout; tapping elsewhere clears it through handleSelect.
+  const touching = useRef(false);
+  useEffect(() => {
+    if (!pdf) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const onChange = () => {
+      if (!touching.current) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const container = containerRef.current;
+        const sel = container && readSelection(container);
+        if (sel) {
+          setPending(sel);
+          setHit(null);
+        }
+      }, 350);
+    };
+    document.addEventListener("selectionchange", onChange);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("selectionchange", onChange);
+    };
+  }, [pdf, sizes]);
+
   function handleSelect(e: React.MouseEvent) {
     const container = containerRef.current;
     if (!container) return;
+    // a tap inside a popout must not re-read (and possibly clear) the selection
+    if ((e.target as HTMLElement).closest("[data-popout]")) return;
     const { clientX, clientY } = e;
     // let the browser finish updating the selection first
     setTimeout(() => {
@@ -663,7 +693,8 @@ export default function PdfViewer({
           }}
           aria-pressed={clipMode}
           title="Drag a box around a diagram (Esc to exit)"
-          className="btn flex-none gap-1.5 !border-2 !border-[var(--color-text)] !px-3 aria-pressed:!border-[var(--color-accent)] aria-pressed:bg-[var(--color-accent)] aria-pressed:text-[var(--color-bg)]"
+          aria-label="Clip diagram"
+          className="btn flex-none gap-1.5 !border-2 !border-[var(--color-text)] !px-3 compact:!px-2 aria-pressed:!border-[var(--color-accent)] aria-pressed:bg-[var(--color-accent)] aria-pressed:text-[var(--color-bg)]"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <circle cx="6" cy="6" r="3" />
@@ -672,7 +703,7 @@ export default function PdfViewer({
             <circle cx="6" cy="18" r="3" />
             <path d="M14.8 14.8 20 20" />
           </svg>
-          {clipMode ? "Drag a box… (Esc)" : "Clip diagram"}
+          {clipMode ? (compact ? "Drag a box…" : "Drag a box… (Esc)") : <span className="compact:hidden">Clip diagram</span>}
         </button>
       )}
     </div>
@@ -702,6 +733,9 @@ export default function PdfViewer({
     )}
     <div
       ref={containerRef}
+      onPointerDown={(e) => {
+        touching.current = e.pointerType !== "mouse";
+      }}
       onMouseUp={handleSelect}
       onScroll={() => {
         if (pending) setPending(null);
@@ -723,12 +757,21 @@ export default function PdfViewer({
       ))}
       {hit && !pending && (
         <div
+          data-popout
           onMouseDown={(e) => e.preventDefault()}
-          style={{
-            left: Math.min(Math.max(hit.x, 90), window.innerWidth - 90),
-            top: Math.min(hit.y, window.innerHeight - 70),
-          }}
-          className="fixed z-40 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-zinc-200 bg-white p-2 text-base text-black shadow-xl"
+          style={
+            window.innerWidth < DOCK_BELOW
+              ? undefined
+              : {
+                  left: Math.min(Math.max(hit.x, 90), window.innerWidth - 90),
+                  top: Math.min(hit.y, window.innerHeight - 70),
+                }
+          }
+          className={
+            window.innerWidth < DOCK_BELOW
+              ? "fixed inset-x-2 bottom-2 z-40 flex flex-wrap items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-2 text-base text-black shadow-xl"
+              : "fixed z-40 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-zinc-200 bg-white p-2 text-base text-black shadow-xl"
+          }
           role="dialog"
           aria-label="Highlight actions"
         >
@@ -782,7 +825,7 @@ export default function PdfViewer({
       )}
     </div>
     </div>
-    <div className="flex h-[34px] flex-none items-center gap-3 overflow-hidden whitespace-nowrap border-t border-[var(--color-divider)] px-3 text-xs">
+    <div className="flex h-[34px] flex-none items-center gap-3 overflow-hidden whitespace-nowrap border-t border-[var(--color-divider)] px-3 text-xs compact:hidden">
       <span className="font-semibold tabular-nums">
         Page {current} of {pdf.numPages}
       </span>

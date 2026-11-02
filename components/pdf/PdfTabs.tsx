@@ -14,6 +14,7 @@ export default function PdfTabs({
   onRemove,
   onError,
   locked = false,
+  hidden = false,
 }: {
   docs: PdfDoc[];
   activeId: string;
@@ -24,6 +25,8 @@ export default function PdfTabs({
   onError: (message: string) => void;
   /** Focus mode: no adding or removing PDFs (no file pickers or dialogs). */
   locked?: boolean;
+  /** Phone split view with a single PDF: the row would only cost height. */
+  hidden?: boolean;
 }) {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -50,6 +53,8 @@ export default function PdfTabs({
     if (error) onError(error);
     if (good.length) await onAdd(good);
   }
+
+  if (hidden) return null;
 
   return (
     <div className="flex h-[42px] flex-none items-stretch border-b-2 border-[var(--color-divider)] bg-[var(--color-surface)]">

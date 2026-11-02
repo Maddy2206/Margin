@@ -17,6 +17,8 @@ interface Props {
 }
 
 const HALF_WIDTH = 290; // about half the popout's width
+/** Below this screen width the popout is too wide to float next to the text, so it docks to the bottom. */
+export const DOCK_BELOW = 640;
 
 /** Appears next to selected PDF text; one click sends it to the notes. */
 export default function SelectionPopout({
@@ -30,19 +32,29 @@ export default function SelectionPopout({
   onExport,
   onDismiss,
 }: Props) {
+  const docked = window.innerWidth < DOCK_BELOW;
   return (
     <div
+      data-popout
       // keep the text selection alive while using the popout
       onMouseDown={(e) => e.preventDefault()}
-      style={{
-        left: Math.min(Math.max(x, HALF_WIDTH), window.innerWidth - HALF_WIDTH),
-        top: Math.min(y, window.innerHeight - 90),
-      }}
-      className="fixed z-40 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 text-base text-black shadow-xl"
+      style={
+        docked
+          ? undefined
+          : {
+              left: Math.min(Math.max(x, HALF_WIDTH), window.innerWidth - HALF_WIDTH),
+              top: Math.min(y, window.innerHeight - 90),
+            }
+      }
+      className={
+        docked
+          ? "fixed inset-x-2 bottom-2 z-40 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-xl border border-zinc-200 bg-white p-3 text-base text-black shadow-xl"
+          : "fixed z-40 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 text-base text-black shadow-xl"
+      }
       role="dialog"
       aria-label="Highlight options"
     >
-      <div className="flex items-center gap-1.5" role="listbox" aria-label="Highlight color">
+      <div className="flex items-center gap-2" role="listbox" aria-label="Highlight color">
         {MARKER_COLORS.map((c) => (
           <button
             key={c.id}
@@ -52,7 +64,7 @@ export default function SelectionPopout({
             aria-label={`${c.label} highlight`}
             title={`${c.label} highlight`}
             onClick={() => onMarker(c.value)}
-            className="h-6 w-6 shrink-0 rounded-full border border-black/25"
+            className="h-7 w-7 shrink-0 rounded-full border border-black/25"
             style={{
               background: c.value,
               outline: marker === c.value ? "2px solid #111827" : "none",

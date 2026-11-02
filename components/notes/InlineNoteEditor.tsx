@@ -34,9 +34,15 @@ export default function InlineNoteEditor({
   // Browsers without field-sizing keep the full page width instead.
   const [autoSize] = useState(() => typeof CSS !== "undefined" && CSS.supports("field-sizing", "content"));
 
+  // iOS zooms the whole page when a text field under 16px gets focus. On touch screens the
+  // field is typed at 16px and scaled down by `s`, so it still looks exactly like the note.
+  const [coarse] = useState(() => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
+  const size = font.size * zoom;
+  const s = coarse && size < 16 ? size / 16 : 1;
+
   const fit = (el: HTMLTextAreaElement) => {
     el.style.height = "0px";
-    el.style.height = `${Math.max(el.scrollHeight, LINE * zoom)}px`;
+    el.style.height = `${Math.max(el.scrollHeight, (LINE * zoom) / s)}px`;
   };
 
   useEffect(() => {
@@ -77,10 +83,12 @@ export default function InlineNoteEditor({
         top: y,
         // grows with what is typed, wrapping only at the page width
         fieldSizing: autoSize ? "content" : undefined,
-        minWidth: 48 * zoom,
-        maxWidth: (MAX_WIDTH + PAD * 2) * zoom,
-        width: autoSize ? undefined : (MAX_WIDTH + PAD * 2) * zoom,
-        padding: `0 0 0 ${PAD * zoom}px`,
+        minWidth: (48 * zoom) / s,
+        maxWidth: ((MAX_WIDTH + PAD * 2) * zoom) / s,
+        width: autoSize ? undefined : ((MAX_WIDTH + PAD * 2) * zoom) / s,
+        padding: `0 0 0 ${(PAD * zoom) / s}px`,
+        transform: s < 1 ? `scale(${s})` : undefined,
+        transformOrigin: "0 0",
         margin: 0,
         border: 0,
         outline: `1px dashed var(--color-accent)`,
@@ -92,8 +100,8 @@ export default function InlineNoteEditor({
         textShadow: isWhite(meta.color) ? "0 0 2px rgba(55,65,81,0.9)" : undefined,
         caretColor: isWhite(meta.color) ? "#374151" : meta.color,
         fontFamily: font.family,
-        fontSize: font.size * zoom,
-        lineHeight: `${LINE * zoom}px`,
+        fontSize: size / s,
+        lineHeight: `${(LINE * zoom) / s}px`,
         whiteSpace: "pre-wrap",
         zIndex: 20,
       }}

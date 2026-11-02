@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -26,6 +26,9 @@ import PdfViewer, { type PendingSelection } from "@/components/pdf/PdfViewer";
 import type { DiagramImage } from "@/components/pdf/DiagramSelect";
 import PdfTabs from "@/components/pdf/PdfTabs";
 import SplitLayout from "@/components/workspace/SplitLayout";
+import BoardMenu from "@/components/workspace/BoardMenu";
+import { useVisualViewport } from "@/components/workspace/useVisualViewport";
+import { COMPACT_QUERY, STACKED_QUERY, useMediaQuery } from "@/components/ui/useMediaQuery";
 import { useFocusSession } from "@/components/focus/useFocusSession";
 import FocusBar from "@/components/focus/FocusBar";
 import FocusOverlay from "@/components/focus/FocusOverlay";
@@ -90,6 +93,17 @@ export default function BoardPage() {
   const focus = useFocusSession(id);
   const audio = useAmbientSound(focus.session, focus.over, focus.needsReturn);
   const [setupOpen, setSetupOpen] = useState(false);
+  // Phones: PDF above notes ("stacked"), less chrome ("compact"), and room for the keyboard.
+  const compact = useMediaQuery(COMPACT_QUERY);
+  const stacked = useMediaQuery(STACKED_QUERY);
+  const keyboard = useVisualViewport(stacked);
+  // While typing a note the notes take the whole screen. Nothing is saved: it only lasts as long as the keyboard.
+  const notesOnly = stacked && keyboard.open && keyboard.inNotes;
+  const savedVisibility = board?.paneVisibility;
+  const visibility = useMemo(
+    () => (notesOnly ? { pdf: false, notes: true } : savedVisibility),
+    [notesOnly, savedVisibility],
+  );
 
   useEffect(() => {
     (async () => {
@@ -374,9 +388,54 @@ export default function BoardPage() {
     </div>
   );
 
+  const saveLabel = saveState === "saving" ? "Saving" : saveState === "error" ? "Not saved" : "Saved";
+  const compactHeader = (
+    <header className="flex h-12 flex-none items-center gap-1.5 border-b-2 border-[var(--color-divider)] px-1">
+      <Link href="/dashboard" aria-label="Back to boards" className="btn btn-icon !h-10 !w-10">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 12H5M11 6l-6 6 6 6" />
+        </svg>
+      </Link>
+      <span className="min-w-0 flex-1 truncate text-base font-extrabold tracking-[-0.01em]">{board.name}</span>
+      <span
+        role="status"
+        aria-label={saveLabel}
+        title={saveLabel}
+        className={`grid h-6 w-6 flex-none place-items-center text-sm font-bold ${
+          saveState === "error" ? "text-[var(--color-accent)]" : "text-[color-mix(in_srgb,var(--color-text)_60%,transparent)]"
+        }`}
+      >
+        {saveState === "saving" ? (
+          <span className="h-2 w-2 bg-[var(--color-neutral-400)]" aria-hidden />
+        ) : saveState === "error" ? (
+          <span className="h-2 w-2 bg-[var(--color-accent)]" aria-hidden />
+        ) : (
+          "✓"
+        )}
+      </span>
+      {layoutSwitch}
+      <BoardMenu
+        paper={board.paper}
+        color={paperColorOf(board.paper, board.paperColor)}
+        onStyleChange={(paper, paperColor) => save({ paper, paperColor })}
+        onFocus={() => setSetupOpen(true)}
+        onDownload={downloadPdf}
+        downloadDisabled={!api}
+        downloading={downloading}
+      />
+    </header>
+  );
+
   return (
-    <div className="flex h-screen flex-col">
-      {focus.session ? (
+    <div
+      className="ws-root flex h-dvh flex-col"
+      style={
+        keyboard.open
+          ? { position: "fixed", top: keyboard.top, left: 0, right: 0, height: keyboard.height }
+          : undefined
+      }
+    >
+      {notesOnly ? null : focus.session ? (
         <FocusBar session={focus.session} boardName={board.name} onEnd={() => focus.end(true)}>
           {(saveState === "error" || focus.saveFailed) && (
             <span role="alert" className="whitespace-nowrap text-xs font-bold text-[var(--color-accent-700)]">
@@ -386,6 +445,8 @@ export default function BoardPage() {
           <SoundMenu audio={audio} />
           {layoutSwitch}
         </FocusBar>
+      ) : compact ? (
+        compactHeader
       ) : (
       <header className="flex h-14 flex-none items-center gap-2.5 border-b-2 border-[var(--color-divider)] pl-2 pr-3">
         <Link href="/dashboard" aria-label="Back to boards" className="btn btn-icon">
@@ -450,7 +511,8 @@ export default function BoardPage() {
       <div className="min-h-0 flex-1">
         <SplitLayout
           ratio={board.dividerRatio}
-          visibility={board.paneVisibility}
+          visibility={visibility ?? board.paneVisibility}
+          stacked={stacked}
           onRatioChange={(dividerRatio) => save({ dividerRatio })}
           onVisibilityChange={(paneVisibility) => save({ paneVisibility })}
           pdf={
@@ -464,6 +526,7 @@ export default function BoardPage() {
                 onRemove={removePdf}
                 onError={setNotice}
                 locked={!!focus.session}
+                hidden={stacked && board.paneVisibility.pdf && board.paneVisibility.notes && docs.length === 1}
               />
               <div className="min-h-0 flex-1">
                 {pdf ? (
@@ -471,8 +534,12 @@ export default function BoardPage() {
                     key={activeDoc.id}
                     blob={pdf}
                     highlights={highlights.filter((h) => h.docId === activeDoc.id)}
-                    initialZoom={activeDoc.zoom}
-                    onZoomChange={(zoom) => patchDoc(activeDoc.id, { zoom })}
+                    compact={compact}
+                    // a desktop zoom would overflow a phone, so the phone fits the width and keeps its zoom to itself
+                    initialZoom={compact ? null : activeDoc.zoom}
+                    onZoomChange={(zoom) => {
+                      if (!compact) patchDoc(activeDoc.id, { zoom });
+                    }}
                     onExport={exportToNotes}
                     onRemoveHighlight={removeHighlight}
                     onRemoveNote={removeHighlightNote}
@@ -498,7 +565,9 @@ export default function BoardPage() {
             </div>
           }
           notes={
+            <div data-pane="notes" className="h-full">
             <NotesCanvas
+              compact={compact}
               boardId={id}
               onApi={handleApi}
               paper={board.paper}
@@ -515,6 +584,7 @@ export default function BoardPage() {
               }
               onJumpToSource={jumpToSource}
             />
+            </div>
           }
         />
       </div>

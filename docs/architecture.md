@@ -13,10 +13,15 @@ Client-only Next.js (App Router) app: no API routes or server code of its own. D
 | `app/board/[id]/page.tsx` | Workspace: owns state and wires the PDF and notes sides together |
 | `components/pdf/` | `PdfViewer` (pdf.js rendering, highlights), `PdfTabs`, `SelectionPopout`, `DiagramSelect` |
 | `components/notes/` | `NotesCanvas` (Excalidraw wrapper, autosave), toolbar, inline editor, paper background, helpers |
-| `components/workspace/SplitLayout.tsx` | Resizable PDF/notes split |
+| `components/workspace/` | `SplitLayout` (resizable PDF/notes split; `stacked` flips it to PDF over notes and keeps that divider position in `localStorage`, separate from `board.dividerRatio`), `BoardMenu` (the phone header's ⋯ menu), `useVisualViewport` (on-screen keyboard detection) |
+| `components/ui/useMediaQuery.ts` | `useMediaQuery` and the two queries the workspace switches on |
 | `components/focus/` | Focus mode: `useFocusSession` (state, saving, fullscreen, absence detection, chime), `useAmbientSound` (focus sound choice + playback tied to the session), `SoundPicker`, `SoundMenu`, `FocusSetupDialog`, `FocusBar`, `FocusOverlay`, `HoldToExit`, `useNow` |
 | `lib/storage/` | The storage API (see Storage below): `index.ts` (what the app imports), `local.ts` (IndexedDB), `cloud.ts` (Supabase), `migrate.ts` (guest-to-account upload), `new-doc.ts` (`newDoc`, the new-PDF record builder both backends share) |
 | `lib/` | `supabase.ts` (client, `null` without env vars), `types.ts`, `export-pdf.ts`, `note-image.ts`, `diagram-region.ts`, `paper.ts`, `pages.ts`, `placement.ts`, `handwriting-fonts.ts`, `pdf-validate.ts` (`validatePdf` for one file, `validatePdfs` for a batch with one combined error message), `visible-page.ts`, `note-source.ts`, `focus.ts` (pure session/timer/stats logic), `ambient.ts` (Web Audio focus-sound engine and saved choice), `auth.ts` (Supabase email/password and Google sign-in, password reset, `useUser()`), `inline-style.ts` (`css`/`hov`/`foc` helpers that turn the design files' inline style strings into React props), `today.ts` |
+
+## Phone layout
+
+The board page switches on two media queries (`components/ui/useMediaQuery.ts`): **stacked** (`max-width: 899px` and portrait) puts the PDF above the notes, and **compact** (`max-width: 899px` or `max-height: 500px`) drops chrome and enlarges touch targets. `app/globals.css` defines the same condition as a Tailwind variant (`@custom-variant compact`, block form, because the shorthand splits the comma), so components use either the `compact` prop (for different markup) or `compact:` classes (for styling); keep the three in sync. Rotating changes only the `Group` orientation, so the PDF viewer and the Excalidraw canvas are not remounted. The saved PDF zoom is ignored and not written while compact. Excalidraw switches to its own phone toolbars on narrow screens; `globals.css` hides `.App-top-bar` and `.App-bottom-bar` along with the desktop wrapper because the app has its own toolbar. While the soft keyboard is open for a text field in the notes (stacked only), the page passes a temporary notes-only visibility to `SplitLayout`; it is never saved.
 
 ## Notebook theme
 

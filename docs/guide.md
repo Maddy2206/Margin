@@ -13,6 +13,7 @@ The full walkthrough, every known limitation and the deployment steps. For the o
 7. Reload: the notes, highlights, layout and reading position come back. **Download PDF** saves your notes.
 8. Click **Focus** to start a full-screen Pomodoro session: pick a timer, an optional goal and an optional page target. The header becomes a slim countdown bar; hold **Hold to end** for 3 seconds to quit early. Leaving full screen or switching tabs doesn't stop the timer, it is counted and you can return with **Back to focus**. Pick a **focus sound** (rain, coffee shop, ocean, brown/pink/white noise, lo-fi or theta/alpha/beta binaural beats; off by default) in the setup dialog or from the speaker button in the bar; it plays during focus rounds and fades out for breaks and when the session ends. A summary appears at the end, and the dashboard shows today, 7-day totals and your streak.
 9. On the dashboard, search boards (press `/`), sort them, and rename or delete a board from its card.
+10. **On a phone** (a narrow portrait screen) the workspace stacks the PDF above the notes in **Split**; drag the bar between them to give either one more room (this position is remembered on that device and doesn't change your desktop layout). The header shows the board name, the **PDF** / **Split** / **Notes** switch and a **⋯** menu with **Focus session**, **Download PDF** and **Page style**. Press and hold text in the PDF to select it; the highlight options appear in a bar at the bottom of the screen. The notes start in the **Pan** tool so one finger scrolls the page; pick **Pen** to write, or **Select**, tap a note and press **Edit note** to change its text. The tools row scrolls sideways, and the bar under the notes has Undo, Redo, **Fit**, previous/next page and **+** to add a page. While you type a note, the notes take the whole screen until the keyboard closes. Landscape phones keep the side-by-side layout with the same compact controls.
 
 Guest boards live in the browser you created them in, so a deployed copy starts empty for each visitor. Signed-in boards belong to the account.
 
@@ -26,7 +27,8 @@ Guest boards live in the browser you created them in, so a deployed copy starts 
 - **Exported PDFs are images** of the notes (not selectable or searchable text).
 - Focus sounds are generated in the browser (no downloads). Binaural beats only work with headphones, and after a reload sound restarts once you click **Back to focus**. Their effect on focus varies between people.
 - Focus mode can't block OS notifications or stop Esc/Alt+Tab (turn on Do Not Disturb yourself); it records leaving instead. Pages "visited" are pages scrolled into view, not proof of reading.
-- No mobile layout for the workspace and no collaboration or sharing (the landing, login and dashboard pages are responsive). Diagrams clipped before the source-link feature have no source to jump to.
+- No collaboration or sharing. Diagrams clipped before the source-link feature have no source to jump to.
+- **Phone layout:** it was built and checked in an emulated touch browser, not on real phones, so the on-screen keyboard and the browser's text-selection handles may behave differently. Pinching over the PDF zooms the whole page (use the **-** / **+** controls instead), and the PDF zoom isn't saved from a phone, so each visit fits the PDF to the width.
 
 ## Deploy
 

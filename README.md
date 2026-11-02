@@ -38,7 +38,7 @@ Open <http://localhost:3000>. It runs in guest mode with no setup, and `public/s
 - Guest boards live only in that browser, so clearing site data deletes them. Sign in to upload them to your account.
 - Scanned PDFs have no text layer, so they can't be highlighted. Diagram clipping still works.
 - Exported PDFs are images of your notes, not searchable text.
-- The workspace has no mobile layout, and there is no collaboration or sharing.
+- On a phone the workspace puts the PDF above the notes (drag the bar between them to resize). It has been checked in an emulated touch browser, not on real devices. There is no collaboration or sharing.
 
 ## Docs
 
