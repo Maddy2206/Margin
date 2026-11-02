@@ -759,19 +759,11 @@ export default function PdfViewer({
         <div
           data-popout
           onMouseDown={(e) => e.preventDefault()}
-          style={
-            window.innerWidth < DOCK_BELOW
-              ? undefined
-              : {
-                  left: Math.min(Math.max(hit.x, 90), window.innerWidth - 90),
-                  top: Math.min(hit.y, window.innerHeight - 70),
-                }
-          }
-          className={
-            window.innerWidth < DOCK_BELOW
-              ? "fixed inset-x-2 bottom-2 z-40 flex flex-wrap items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-2 text-base text-black shadow-xl"
-              : "fixed z-40 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-zinc-200 bg-white p-2 text-base text-black shadow-xl"
-          }
+          style={{
+            left: Math.min(Math.max(hit.x, window.innerWidth < DOCK_BELOW ? 100 : 90), window.innerWidth - (window.innerWidth < DOCK_BELOW ? 100 : 90)),
+            top: Math.min(hit.y, window.innerHeight - 70),
+          }}
+          className="fixed z-40 flex w-max max-w-[calc(100vw-16px)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white p-2 text-base text-black shadow-xl compact:rounded-lg compact:p-1.5"
           role="dialog"
           aria-label="Highlight actions"
         >
@@ -781,7 +773,7 @@ export default function PdfViewer({
               onRemoveHighlight?.(hit.id);
               setHit(null);
             }}
-            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 compact:px-3 compact:py-1.5"
           >
             Remove highlight
           </button>
@@ -792,7 +784,7 @@ export default function PdfViewer({
                 onRemoveNote?.(hit.id);
                 setHit(null);
               }}
-              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 compact:px-3 compact:py-1.5"
             >
               Remove note
             </button>

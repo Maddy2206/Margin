@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { MARKER_COLORS } from "@/lib/handwriting-fonts";
 
 interface Props {
@@ -17,7 +18,7 @@ interface Props {
 }
 
 const HALF_WIDTH = 290; // about half the popout's width
-/** Below this screen width the popout is too wide to float next to the text, so it docks to the bottom. */
+/** Below this screen width the full popout doesn't fit, so a small pill is shown instead. */
 export const DOCK_BELOW = 640;
 
 /** Appears next to selected PDF text; one click sends it to the notes. */
@@ -32,29 +33,91 @@ export default function SelectionPopout({
   onExport,
   onDismiss,
 }: Props) {
-  const docked = window.innerWidth < DOCK_BELOW;
+  const narrow = window.innerWidth < DOCK_BELOW;
+  const [palette, setPalette] = useState(false);
+
+  if (narrow) {
+    // A small pill just under the selected text: the highlight color is one swatch that
+    // opens the palette, so the Export button stays small. The browser's own Copy /
+    // Select all bar and the selection handles sit around the text, so it is kept clear of them.
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    return (
+      <div
+        data-popout
+        onMouseDown={(e) => e.preventDefault()}
+        style={{
+          left: palette ? window.innerWidth / 2 : Math.min(Math.max(x, 110), window.innerWidth - 110),
+          top: Math.min(y + (coarse ? 26 : 0), window.innerHeight - 56),
+        }}
+        className="fixed z-40 flex w-max max-w-[calc(100vw-16px)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white p-1.5 text-sm text-black shadow-lg"
+        role="dialog"
+        aria-label="Highlight options"
+      >
+        {palette ? (
+          <div className="flex items-center gap-1.5" role="listbox" aria-label="Highlight color">
+            {MARKER_COLORS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                role="option"
+                aria-selected={marker === c.value}
+                aria-label={`${c.label} highlight`}
+                onClick={() => {
+                  onMarker(c.value);
+                  setPalette(false);
+                }}
+                className="h-7 w-7 shrink-0 rounded-full border border-black/25"
+                style={{
+                  background: c.value,
+                  outline: marker === c.value ? "2px solid #111827" : "none",
+                  outlineOffset: 1,
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setPalette(true)}
+            aria-label="Highlight color"
+            aria-expanded={false}
+            className="h-8 w-8 shrink-0 rounded-full border border-black/25"
+            style={{ background: marker }}
+          />
+        )}
+        <button
+          type="button"
+          onClick={onExport}
+          className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white active:bg-indigo-700"
+        >
+          Export to board
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="px-1.5 text-xl leading-none text-zinc-500"
+        >
+          &times;
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       data-popout
       // keep the text selection alive while using the popout
       onMouseDown={(e) => e.preventDefault()}
-      style={
-        docked
-          ? undefined
-          : {
-              left: Math.min(Math.max(x, HALF_WIDTH), window.innerWidth - HALF_WIDTH),
-              top: Math.min(y, window.innerHeight - 90),
-            }
-      }
-      className={
-        docked
-          ? "fixed inset-x-2 bottom-2 z-40 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-xl border border-zinc-200 bg-white p-3 text-base text-black shadow-xl"
-          : "fixed z-40 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 text-base text-black shadow-xl"
-      }
+      style={{
+        left: Math.min(Math.max(x, HALF_WIDTH), window.innerWidth - HALF_WIDTH),
+        top: Math.min(y, window.innerHeight - 90),
+      }}
+      className="fixed z-40 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 text-base text-black shadow-xl"
       role="dialog"
       aria-label="Highlight options"
     >
-      <div className="flex items-center gap-2" role="listbox" aria-label="Highlight color">
+      <div className="flex items-center gap-1.5" role="listbox" aria-label="Highlight color">
         {MARKER_COLORS.map((c) => (
           <button
             key={c.id}
@@ -64,7 +127,7 @@ export default function SelectionPopout({
             aria-label={`${c.label} highlight`}
             title={`${c.label} highlight`}
             onClick={() => onMarker(c.value)}
-            className="h-7 w-7 shrink-0 rounded-full border border-black/25"
+            className="h-6 w-6 shrink-0 rounded-full border border-black/25"
             style={{
               background: c.value,
               outline: marker === c.value ? "2px solid #111827" : "none",
